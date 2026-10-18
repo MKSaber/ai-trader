@@ -1,6 +1,19 @@
 {
   "detector_version": "patterns-v1",
   "trade_rules_version": "trade-rules-v1",
+  "cost_profile": "etoro_uk_lse",
+  "cost_profile_label": "eToro UK LSE cash (assume \u00a30 commission): 0.5% SDRT, PTM \u00a31.50>$10k",
+  "costs": {
+    "commission_bps": 0.0,
+    "spread_bps": 5.0,
+    "slippage_bps": 2.0,
+    "stamp_duty_rate": 0.005,
+    "fx_bps": 0.0,
+    "flat_commission_gbp": 0.0,
+    "ptm_levy_gbp": 1.5,
+    "ptm_threshold_gbp": 10000.0,
+    "sources": "candle-lab/COST_SOURCES.md"
+  },
   "days_requested": 20,
   "symbols": [
     "VOD.L",
@@ -69,15 +82,15 @@
     "hammer": 160
   },
   "trade_count": 343,
-  "wins": 0,
-  "losses": 343,
-  "win_rate": 0.0,
-  "total_realized_pnl_gbp": -34132.4185,
+  "wins": 6,
+  "losses": 337,
+  "win_rate": 0.01749271137026239,
+  "total_realized_pnl_gbp": -23830.4638,
   "portfolio_start_gbp": 500000.0,
-  "portfolio_end_gbp": 465867.58,
-  "portfolio_return_pct": -6.8265,
+  "portfolio_end_gbp": 476169.54,
+  "portfolio_return_pct": -4.7661,
   "profitable": false,
-  "disclaimer": "Paper simulation on DELAYED Yahoo 5m bars. Costs include spread, slippage, commission, and UK stamp duty on buys. Not live execution proof.",
+  "disclaimer": "Paper simulation on DELAYED Yahoo 5m bars. Broker/tax costs follow COST_SOURCES.md (GOV.UK SDRT, Takeover Panel PTM, T212/eToro schedules). Spread/slippage are market-friction assumptions. Not live execution proof.",
   "exit_reason_counts": {
     "stop_loss": 108,
     "take_profit": 50,
@@ -97,9 +110,9 @@
         "hammer": 29
       },
       "trade_count": 48,
-      "realized_pnl": -5063.63,
-      "wins": 0,
-      "losses": 48,
+      "realized_pnl": -3596.99,
+      "wins": 3,
+      "losses": 45,
       "expired_setups": 42,
       "sample_trades": [
         {
@@ -110,12 +123,12 @@
           "stop": 126.12790639114381,
           "target": 128.18431221771237,
           "status": "closed",
-          "qty": 78.77725823486672,
-          "entry_price": 126.94018837499998,
-          "exit_price": 126.00177848475266,
+          "qty": 78.82056623829435,
+          "entry_price": 126.87044101875,
+          "exit_price": 126.0711488332678,
           "exit_reason": "stop_loss",
           "ambiguous": false,
-          "pnl_gbp": -153.8145
+          "pnl_gbp": -121.9723
         },
         {
           "symbol": "VOD.L",
@@ -125,12 +138,12 @@
           "stop": 127.33630152511597,
           "target": 128.1687311096191,
           "status": "closed",
-          "qty": 78.16275061541126,
-          "entry_price": 127.74139183133695,
-          "exit_price": 127.20896522359085,
+          "qty": 78.23066154322956,
+          "entry_price": 127.67120425340767,
+          "exit_price": 127.27900018942968,
           "exit_reason": "stop_loss",
           "ambiguous": false,
-          "pnl_gbp": -121.4305
+          "pnl_gbp": -89.5966
         },
         {
           "symbol": "VOD.L",
@@ -140,12 +153,12 @@
           "stop": 126.69161975479126,
           "target": 127.6571763305664,
           "status": "closed",
-          "qty": 78.43201283803863,
-          "entry_price": 127.14802472686766,
-          "exit_price": 127.52951915423583,
+          "qty": 78.52523878372617,
+          "entry_price": 127.07816317481995,
+          "exit_price": 127.59973060121766,
           "exit_reason": "take_profit",
           "ambiguous": false,
-          "pnl_gbp": -49.9033
+          "pnl_gbp": -19.4374
         }
       ]
     },
@@ -160,9 +173,9 @@
         "shooting_star": 19
       },
       "trade_count": 61,
-      "realized_pnl": -5863.47,
-      "wins": 0,
-      "losses": 61,
+      "realized_pnl": -4011.53,
+      "wins": 1,
+      "losses": 60,
       "expired_setups": 37,
       "sample_trades": [
         {
@@ -173,12 +186,12 @@
           "stop": 550.5245877990723,
           "target": 554.2780744018555,
           "status": "closed",
-          "qty": 18.105199422065922,
-          "entry_price": 552.32752575,
-          "exit_price": 553.7237963274537,
+          "qty": 18.115152802726758,
+          "entry_price": 552.0240490875001,
+          "exit_price": 554.0286492683747,
           "exit_reason": "take_profit",
           "ambiguous": false,
-          "pnl_gbp": -54.7582
+          "pnl_gbp": -24.2027
         },
         {
           "symbol": "BP.L",
@@ -188,12 +201,12 @@
           "stop": 552.22375,
           "target": 556.5826732788086,
           "status": "closed",
-          "qty": 18.033157623636185,
-          "entry_price": 554.2304011506957,
-          "exit_price": 552.8466243896485,
+          "qty": 18.048587563113966,
+          "entry_price": 553.9258789522614,
+          "exit_price": 553.1509944030762,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -104.8726
+          "pnl_gbp": -72.965
         },
         {
           "symbol": "BP.L",
@@ -203,12 +216,12 @@
           "stop": 552.6235744018555,
           "target": 555.7830244750975,
           "status": "closed",
-          "qty": 18.014235416030182,
-          "entry_price": 554.2304011506957,
-          "exit_price": 552.8466243896485,
+          "qty": 18.035415223400655,
+          "entry_price": 553.9258789522614,
+          "exit_price": 553.1509944030762,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -104.7626
+          "pnl_gbp": -72.9117
         }
       ]
     },
@@ -223,9 +236,9 @@
         "bearish_engulfing": 123
       },
       "trade_count": 80,
-      "realized_pnl": -8071.59,
-      "wins": 0,
-      "losses": 80,
+      "realized_pnl": -5692.53,
+      "wins": 1,
+      "losses": 79,
       "expired_setups": 43,
       "sample_trades": [
         {
@@ -236,12 +249,12 @@
           "stop": 1534.6323244018556,
           "target": 1547.0423511962888,
           "status": "closed",
-          "qty": 6.491234561410001,
-          "entry_price": 1540.5389999999998,
-          "exit_price": 1533.0976920774538,
+          "qty": 6.494803134560858,
+          "entry_price": 1539.69255,
+          "exit_price": 1533.9417398558749,
           "exit_reason": "stop_loss",
           "ambiguous": false,
-          "pnl_gbp": -128.2308
+          "pnl_gbp": -96.3336
         },
         {
           "symbol": "HSBA.L",
@@ -251,12 +264,12 @@
           "stop": 1533.6328244018555,
           "target": 1543.038351196289,
           "status": "closed",
-          "qty": 6.49232656995469,
-          "entry_price": 1538.304768,
-          "exit_price": 1541.4953128450927,
+          "qty": 6.497970415796061,
+          "entry_price": 1537.4595456000002,
+          "exit_price": 1542.3439839382509,
           "exit_reason": "take_profit",
           "ambiguous": false,
-          "pnl_gbp": -59.2144
+          "pnl_gbp": -28.7185
         },
         {
           "symbol": "HSBA.L",
@@ -266,12 +279,12 @@
           "stop": 1543.427851196289,
           "target": 1553.4632976074215,
           "status": "closed",
-          "qty": 6.446507788180386,
-          "entry_price": 1548.3197729999997,
-          "exit_price": 1544.2142497558593,
+          "qty": 6.454083721854696,
+          "entry_price": 1547.46904785,
+          "exit_price": 1545.0644177612305,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -106.2766
+          "pnl_gbp": -74.4389
         }
       ]
     },
@@ -286,7 +299,7 @@
         "shooting_star": 39
       },
       "trade_count": 81,
-      "realized_pnl": -7748.22,
+      "realized_pnl": -5328.31,
       "wins": 0,
       "losses": 81,
       "expired_setups": 46,
@@ -299,12 +312,12 @@
           "stop": 1868.56525,
           "target": 1883.1782499999997,
           "status": "closed",
-          "qty": 5.330848447177156,
-          "entry_price": 1875.8739999999998,
-          "exit_price": 1872.6255,
+          "qty": 5.333779095031568,
+          "entry_price": 1874.8433000000002,
+          "exit_price": 1873.656475,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -97.2913
+          "pnl_gbp": -65.3274
         },
         {
           "symbol": "GSK.L",
@@ -314,12 +327,12 @@
           "stop": 1869.56475,
           "target": 1884.1807499999995,
           "status": "closed",
-          "qty": 5.324421099239664,
-          "entry_price": 1876.3111867499997,
-          "exit_price": 1882.2965692499995,
+          "qty": 5.329052698697278,
+          "entry_price": 1875.2802465375,
+          "exit_price": 1883.3328686624995,
           "exit_reason": "take_profit",
           "ambiguous": false,
-          "pnl_gbp": -48.1013
+          "pnl_gbp": -17.5679
         },
         {
           "symbol": "GSK.L",
@@ -329,12 +342,12 @@
           "stop": 1882.0585,
           "target": 1896.7119999999998,
           "status": "closed",
-          "qty": 5.286585370568964,
-          "entry_price": 1888.8299429999997,
-          "exit_price": 1886.6115,
+          "qty": 5.292802283551548,
+          "entry_price": 1887.79212435,
+          "exit_price": 1887.650175,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -91.5941
+          "pnl_gbp": -59.7021
         }
       ]
     },
@@ -349,9 +362,9 @@
         "hammer": 37
       },
       "trade_count": 73,
-      "realized_pnl": -7385.52,
-      "wins": 0,
-      "losses": 73,
+      "realized_pnl": -5201.11,
+      "wins": 1,
+      "losses": 72,
       "expired_setups": 57,
       "sample_trades": [
         {
@@ -362,12 +375,12 @@
           "stop": 12431.781,
           "target": 12523.121999999996,
           "status": "closed",
-          "qty": 0.8016231118552791,
-          "entry_price": 12474.690227999998,
-          "exit_price": 12497.49,
+          "qty": 0.8020638062543199,
+          "entry_price": 12467.8360026,
+          "exit_price": 12504.3705,
           "exit_reason": "bearish_shooting_star",
           "ambiguous": false,
-          "pnl_gbp": -61.7506
+          "pnl_gbp": -31.2102
         },
         {
           "symbol": "AZN.L",
@@ -377,12 +390,12 @@
           "stop": 12505.744,
           "target": 12585.300999999996,
           "status": "closed",
-          "qty": 0.7966510996293807,
-          "entry_price": 12544.795262999998,
-          "exit_price": 12509.478,
+          "qty": 0.7973326452760705,
+          "entry_price": 12537.90251835,
+          "exit_price": 12516.3651,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -108.0439
+          "pnl_gbp": -76.1463
         },
         {
           "symbol": "AZN.L",
@@ -392,12 +405,12 @@
           "stop": 12563.715,
           "target": 12643.445999999998,
           "status": "closed",
-          "qty": 0.7921220175140915,
-          "entry_price": 12602.882291999998,
-          "exit_price": 12579.408,
+          "qty": 0.7930531872984482,
+          "entry_price": 12595.9576314,
+          "exit_price": 12586.3336,
           "exit_reason": "bearish_bearish_engulfing",
           "ambiguous": false,
-          "pnl_gbp": -98.4308
+          "pnl_gbp": -66.5656
         }
       ]
     }

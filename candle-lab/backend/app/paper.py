@@ -14,27 +14,54 @@ class CostBreakdown:
     slippage: float
     commission: float
     stamp: float
+    fx: float = 0.0
+    ptm: float = 0.0
 
     @property
     def total(self) -> float:
-        return self.spread + self.slippage + self.commission + self.stamp
+        return (
+            self.spread
+            + self.slippage
+            + self.commission
+            + self.stamp
+            + self.fx
+            + self.ptm
+        )
+
+
+def _ptm_levy(notional: float, settings: Settings) -> float:
+    """Takeover Panel PTM levy: flat fee when consideration exceeds threshold."""
+    if settings.ptm_levy_gbp <= 0:
+        return 0.0
+    if notional > settings.ptm_threshold_gbp:
+        return float(settings.ptm_levy_gbp)
+    return 0.0
 
 
 def entry_costs(notional: float, settings: Settings | None = None) -> CostBreakdown:
     s = settings or get_settings()
     half_spread = notional * (s.spread_bps / 2.0) / 10_000.0
     slip = notional * s.slippage_bps / 10_000.0
-    commission = notional * s.commission_bps / 10_000.0
+    commission = (
+        notional * s.commission_bps / 10_000.0 + float(s.flat_commission_gbp)
+    )
     stamp = notional * s.stamp_duty_rate
-    return CostBreakdown(half_spread, slip, commission, stamp)
+    fx = notional * s.fx_bps / 10_000.0
+    ptm = _ptm_levy(notional, s)
+    return CostBreakdown(half_spread, slip, commission, stamp, fx, ptm)
 
 
 def exit_costs(notional: float, settings: Settings | None = None) -> CostBreakdown:
     s = settings or get_settings()
     half_spread = notional * (s.spread_bps / 2.0) / 10_000.0
     slip = notional * s.slippage_bps / 10_000.0
-    commission = notional * s.commission_bps / 10_000.0
-    return CostBreakdown(half_spread, slip, commission, 0.0)
+    commission = (
+        notional * s.commission_bps / 10_000.0 + float(s.flat_commission_gbp)
+    )
+    fx = notional * s.fx_bps / 10_000.0
+    ptm = _ptm_levy(notional, s)
+    # No SDRT on sales (GOV.UK)
+    return CostBreakdown(half_spread, slip, commission, 0.0, fx, ptm)
 
 
 def adverse_entry_price(mid: float, settings: Settings | None = None) -> float:

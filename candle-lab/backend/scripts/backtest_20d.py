@@ -26,7 +26,7 @@ from curl_cffi import requests as curl_requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.config import Settings
+from app.config import BROKER_PROFILES, Settings, apply_broker_profile
 from app.paper import (
     adverse_entry_price,
     adverse_exit_price,
@@ -339,12 +339,21 @@ def _trade_dict(s: OpenSetup) -> dict:
     }
 
 
-def run(days: int, symbols: list[str], starting_cash: float) -> dict:
-    settings = Settings(starting_cash_gbp=starting_cash)
+def run(
+    days: int,
+    symbols: list[str],
+    starting_cash: float,
+    broker: str = "trading212",
+) -> dict:
+    settings = apply_broker_profile(
+        Settings(starting_cash_gbp=starting_cash),
+        broker,
+    )
     per_symbol: list[dict] = []
     all_trades: list[dict] = []
     pattern_totals: dict[str, int] = {}
     feed_notes: list[dict] = []
+    profile_meta = BROKER_PROFILES[broker]
 
     for symbol in symbols:
         print(f"\n=== {symbol} ===", flush=True)
@@ -411,6 +420,19 @@ def run(days: int, symbols: list[str], starting_cash: float) -> dict:
     return {
         "detector_version": DETECTOR_VERSION,
         "trade_rules_version": settings.trade_rules_version,
+        "cost_profile": broker,
+        "cost_profile_label": profile_meta["label"],
+        "costs": {
+            "commission_bps": settings.commission_bps,
+            "spread_bps": settings.spread_bps,
+            "slippage_bps": settings.slippage_bps,
+            "stamp_duty_rate": settings.stamp_duty_rate,
+            "fx_bps": settings.fx_bps,
+            "flat_commission_gbp": settings.flat_commission_gbp,
+            "ptm_levy_gbp": settings.ptm_levy_gbp,
+            "ptm_threshold_gbp": settings.ptm_threshold_gbp,
+            "sources": "candle-lab/COST_SOURCES.md",
+        },
         "days_requested": days,
         "symbols": symbols,
         "starting_cash_gbp_per_symbol": starting_cash,
@@ -427,8 +449,9 @@ def run(days: int, symbols: list[str], starting_cash: float) -> dict:
         "profitable": total_pnl > 0,
         "per_symbol": per_symbol,
         "disclaimer": (
-            "Paper simulation on DELAYED Yahoo 5m bars. Costs include spread, "
-            "slippage, commission, and UK stamp duty on buys. Not live execution proof."
+            "Paper simulation on DELAYED Yahoo 5m bars. Broker/tax costs follow "
+            "COST_SOURCES.md (GOV.UK SDRT, Takeover Panel PTM, T212/eToro schedules). "
+            "Spread/slippage are market-friction assumptions. Not live execution proof."
         ),
     }
 
@@ -442,12 +465,22 @@ def main() -> int:
         help="Comma-separated Yahoo LSE tickers",
     )
     parser.add_argument("--cash", type=float, default=100_000.0)
+    parser.add_argument(
+        "--broker",
+        default="trading212",
+        choices=sorted(BROKER_PROFILES),
+        help="Cost profile from COST_SOURCES.md",
+    )
     parser.add_argument("--out", default="")
     args = parser.parse_args()
     symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
-    report = run(args.days, symbols, args.cash)
+    report = run(args.days, symbols, args.cash, broker=args.broker)
 
-    out_path = Path(args.out) if args.out else Path("artifacts") / "backtest_20d_report.json"
+    out_path = (
+        Path(args.out)
+        if args.out
+        else Path("artifacts") / f"backtest_20d_{args.broker}_report.json"
+    )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, default=str))
 
@@ -475,7 +508,7 @@ def main() -> int:
         }
         for s in report["per_symbol"]
     ]
-    summary_path = out_path.with_name("backtest_20d_summary.json")
+    summary_path = out_path.with_name(f"backtest_20d_{args.broker}_summary.json")
     summary_path.write_text(json.dumps(compact, indent=2, default=str))
 
     print("=" * 72)
@@ -483,6 +516,7 @@ def main() -> int:
     print("=" * 72)
     print(f"Symbols: {', '.join(symbols)}")
     print(f"Detector: {report['detector_version']} | Rules: {report['trade_rules_version']}")
+    print(f"Costs: {report['cost_profile']} — {report['cost_profile_label']}")
     print(f"Patterns detected: {report['pattern_totals'] or '(none)'}")
     print(f"Trades: {report['trade_count']}  wins={report['wins']}  losses={report['losses']}")
     wr = report["win_rate"]

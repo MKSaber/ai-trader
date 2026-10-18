@@ -51,14 +51,17 @@ cd candle-lab/backend && . .venv/bin/activate && pytest -q
 ## 20-day paper backtest (pattern detector only)
 
 Replays delayed Yahoo 5m bars for the last N LSE trading days, detects
-`patterns-v1` signals, and paper-trades long setups with `trade-rules-v1`
-(costs include spread, slippage, commission, UK stamp duty):
+`patterns-v1` signals, and paper-trades long setups with `trade-rules-v1`.
+
+Cost profiles (GOV.UK SDRT 0.5%, Takeover Panel PTM £1.50 > £10k, plus
+Trading 212 / eToro schedules) are documented in [COST_SOURCES.md](COST_SOURCES.md):
 
 ```bash
 cd candle-lab/backend && . .venv/bin/activate
-python scripts/backtest_20d.py --days 20 \
+python scripts/backtest_20d.py --days 20 --broker trading212 \
   --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
-# writes artifacts/backtest_20d_report.json
+python scripts/backtest_20d.py --days 20 --broker etoro_uk_lse
+# also: etoro_flat_usd | legacy_stress
 ```
 
 ## What was verified now vs later
