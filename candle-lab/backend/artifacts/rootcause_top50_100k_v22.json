@@ -1,0 +1,94 @@
+{
+  "scope": "top-50 Yahoo mcap · £100k · Trading 212 · trade-rules-v2.2",
+  "headline": "Losses are stop-volume + universe dilution, amplified by £100k sizing — not a broken hour-15 filter on the original top-10.",
+  "windows": {
+    "60d": {"pnl": -4321.34, "trades": 58, "stops": 39, "tps": 8, "winrate": 0.276},
+    "90d": {"pnl": -3341.31, "trades": 83, "stops": 61, "tps": 14, "winrate": 0.241},
+    "120d": {"pnl": -1811.30, "trades": 101, "stops": 76, "tps": 17, "winrate": 0.238}
+  },
+  "root_causes": [
+    {
+      "id": "RC1_stop_mass",
+      "title": "Stop mass overwhelms take-profits",
+      "evidence": {
+        "60d": "39 stops (−£9.3k) vs 8 TPs (+£2.1k); need ~36 TPs to offset, had 8",
+        "90d": "61 stops (−£18.9k) vs 14 TPs (+£13.2k)",
+        "120d": "76 stops (−£24.4k) vs 17 TPs (+£20.0k)"
+      },
+      "severity": "Hour-15 engulfing still rare; expanding names multiplies false breakouts that hit the 1R-padded stop."
+    },
+    {
+      "id": "RC2_universe_dilution",
+      "title": "Edge is top-10; rest_30 and banks/fin/defence destroy it",
+      "evidence": {
+        "60d_cohorts": {
+          "top10": {"n": 7, "pnl": 293.25},
+          "top20_new": {"n": 12, "pnl": -1161.6},
+          "rest_30": {"n": 39, "pnl": -3453.0, "share_of_loss": "80%"}
+        },
+        "60d_worst_sectors": {
+          "fin": -1947.62,
+          "bank": -1265.37,
+          "defence": -979.22,
+          "pharma": -868.33
+        },
+        "60d_best_sector": {"staples": 1609.11}
+      },
+      "implication": "v2.2 was tuned on megacap top-10; mid-cap / bank / defence names are net negative under the same rules."
+    },
+    {
+      "id": "RC3_expectancy_gap",
+      "title": "Win rate below breakeven despite decent payoff",
+      "evidence": {
+        "60d": "WR 27.6% vs breakeven ~41% (payoff 1.44) — large gap",
+        "90d": "WR 24.1% vs breakeven ~27.8% (payoff 2.60) — small gap",
+        "120d": "WR 23.8% vs breakeven ~25.2% (payoff 2.97) — tiny gap, still red"
+      },
+      "implication": "Longer windows improve payoff (bigger TPs) but stop count grows faster than TPs."
+    },
+    {
+      "id": "RC4_size_and_sdrt",
+      "title": "£100k + 1.5%/35% sizing amplifies every stop; SDRT is material",
+      "evidence": {
+        "60d_mean_notional_gbp": 7664,
+        "60d_approx_total_sdrt_gbp": 2223,
+        "60d_sdrt_on_stopped_trades_gbp": 1736,
+        "note": "Same risk fraction as £20k book → ~5× pound P&L per trade. One III.L stop alone −£1,463."
+      },
+      "implication": "Costs (~£2–5k SDRT across windows) are same order as the book loss; each false breakout pays 0.5% again."
+    },
+    {
+      "id": "RC5_time_cluster_60d",
+      "title": "60d loss is front-loaded",
+      "evidence": {
+        "H1": {"n": 29, "stops": 24, "pnl": -5211.68},
+        "H2": {"n": 29, "stops": 15, "pnl": 890.33},
+        "T3": {"n": 20, "stops": 7, "pnl": 1934.33}
+      },
+      "implication": "Same pattern as prior top-10 v2.1 60d (bad first half); cooloff/max_stops help but do not remove early chop on new names."
+    },
+    {
+      "id": "RC6_max_stops_insufficient_on_broad_book",
+      "title": "max_stops=2 still leaves many double-stop symbols on 90/120d",
+      "evidence": {
+        "60d_symbols_with_2_stops": 4,
+        "90d_symbols_with_2_stops": 16,
+        "120d_symbols_with_2_stops": 30,
+        "120d_clustered_stop_pnl": -18656.99
+      },
+      "implication": "Cap limits damage per name but with 50 names, 30×2 stops still dominate."
+    }
+  ],
+  "not_root_causes": [
+    "Hour-15 filter broken on top-10 (top-10 cohort still +£293 on 60d / +£1.5k on 90d)",
+    "Tiny risk geometry (median stop distance ~2%, not sub-1% noise)",
+    "Missing data (50/50 symbols healthy all windows)"
+  ],
+  "fix_levers_ranked": [
+    "Keep universe narrow (top-10 or liquid staples/energy only) — largest lever",
+    "Sector / name blacklist: banks, defence, volatile fin (III) under this setup",
+    "Lower risk_frac or max_position_frac at £100k so one stop ≠ −£1k+",
+    "Stricter max_stops (1) or longer cooloff on broad books",
+    "Cost gate already on; consider requiring larger pattern range before entry on mid-caps"
+  ]
+}
