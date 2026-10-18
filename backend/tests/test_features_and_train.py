@@ -6,7 +6,12 @@ import numpy as np
 import pandas as pd
 
 from app.services.features.pipeline import build_daily_features
-from app.services.models.train import chronological_splits, train_all_models
+from app.services.models.train import (
+    chronological_splits,
+    fixed_session_holdout,
+    holdout_success_verdict,
+    train_all_models,
+)
 
 
 def _make_bars(n: int = 80) -> pd.DataFrame:
@@ -67,3 +72,45 @@ def test_train_smoke(tmp_path) -> None:
     assert ridge.formula is not None
     assert "coefficients" in ridge.formula
     assert ridge.metrics.get("validation") == "chronological_walk_forward"
+
+
+def test_fixed_holdout_90_5(tmp_path) -> None:
+    """90-session train / 5-session test stays time-ordered."""
+    feat = build_daily_features(_make_bars(130))
+    assert len(pd.to_datetime(feat.frame.index).unique()) >= 95
+    results = train_all_models(
+        feat.frame,
+        tmp_path,
+        train_sessions=90,
+        test_sessions=5,
+    )
+    ridge = next(r for r in results if r.model_type == "ridge")
+    assert ridge.metrics["validation"] == "fixed_holdout_90train_5test"
+    holdout = ridge.metrics["holdout"]
+    assert holdout["unique_train_sessions"] == 90
+    assert holdout["unique_test_sessions"] == 5
+    assert holdout["train_end"] < holdout["test_start"]
+
+    dates = pd.to_datetime(feat.frame.index).to_numpy()
+    train_idx, test_idx, _ = fixed_session_holdout(
+        dates, train_sessions=90, test_sessions=5
+    )
+    assert dates[train_idx].max() < dates[test_idx].min()
+
+
+def test_holdout_verdict_gate() -> None:
+    """Success gate requires beating chance threshold and naive."""
+    fail = holdout_success_verdict(
+        [
+            {"model_type": "naive", "accuracy": 0.5, "n": 25},
+            {"model_type": "ridge", "accuracy": 0.52, "n": 25},
+        ]
+    )
+    assert fail["passed"] is False
+    ok = holdout_success_verdict(
+        [
+            {"model_type": "naive", "accuracy": 0.48, "n": 25},
+            {"model_type": "lightgbm", "accuracy": 0.6, "n": 25},
+        ]
+    )
+    assert ok["passed"] is True

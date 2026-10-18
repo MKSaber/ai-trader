@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { apiGet, apiUpload } from "../api/client";
+import { apiGet, apiPost, apiUpload } from "../api/client";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
+const DEFAULT_SYMBOLS = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L";
 
 type UploadRow = {
   id: number;
@@ -16,6 +18,8 @@ export function UploadPage() {
   const [sourceType, setSourceType] = useState("market_ohlcv");
   const [drag, setDrag] = useState(false);
   const [status, setStatus] = useState("");
+  const [symbols, setSymbols] = useState(DEFAULT_SYMBOLS);
+  const [fetching, setFetching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const refresh = () =>
@@ -26,6 +30,26 @@ export function UploadPage() {
   useEffect(() => {
     refresh();
   }, []);
+
+  async function fetchYahoo() {
+    setFetching(true);
+    setStatus("Fetching from Yahoo Finance…");
+    try {
+      const qs = new URLSearchParams({
+        offline: "false",
+        lookback_days: "1825",
+        symbols: symbols.trim() || DEFAULT_SYMBOLS,
+      });
+      const res = await apiPost<Record<string, unknown>>(
+        `/provider/fetch?${qs.toString()}`,
+      );
+      setStatus(JSON.stringify(res, null, 2));
+    } catch (e) {
+      setStatus(String(e));
+    } finally {
+      setFetching(false);
+    }
+  }
 
   async function preview(file: File) {
     const form = new FormData();
@@ -48,10 +72,14 @@ export function UploadPage() {
         /\.(csv|xlsx|xls)$/i.test(file.name)
       ) {
         const map = await preview(file);
-        setStatus(`Mapping preview:\n${JSON.stringify(map, null, 2)}\n\nImporting…`);
+        setStatus(
+          `Mapping preview:\n${JSON.stringify(map, null, 2)}\n\nImporting…`,
+        );
       }
       const res = await apiUpload(file, sourceType);
-      setStatus((prev) => `${prev}\n\nImport:\n${JSON.stringify(res, null, 2)}`);
+      setStatus(
+        (prev) => `${prev}\n\nImport:\n${JSON.stringify(res, null, 2)}`,
+      );
       refresh();
     } catch (e) {
       setStatus(String(e));
@@ -61,10 +89,67 @@ export function UploadPage() {
   return (
     <div>
       <header className="page-head">
-        <h1>Import</h1>
+        <h1>Market data</h1>
         <p>
-          Drop a file. We validate type, size, and duplicates — and never treat
-          uploads as executable instructions.
+          Pull LSE bars from Yahoo Finance (via yfinance). File upload stays
+          available for trades and commentary — not required for prices.
+        </p>
+      </header>
+
+      <div className="card" style={{ marginBottom: "1.25rem" }}>
+        <h3>Fetch from Yahoo</h3>
+        <p style={{ color: "var(--secondary)", marginTop: 0 }}>
+          Pulls ~5 years of daily bars by default for walk-forward training.
+          Intraday remains ~60 days. Empty responses are never replaced with
+          synthetic data.
+        </p>
+        <label
+          style={{
+            display: "block",
+            fontSize: "0.85rem",
+            color: "var(--secondary)",
+            marginBottom: "0.35rem",
+          }}
+        >
+          Symbols (Yahoo format, comma-separated)
+        </label>
+        <input
+          className="select"
+          style={{ width: "100%", maxWidth: "36rem", marginBottom: "1rem" }}
+          value={symbols}
+          onChange={(e) => setSymbols(e.target.value)}
+          placeholder={DEFAULT_SYMBOLS}
+        />
+        <div className="actions left">
+          <button disabled={fetching} onClick={fetchYahoo}>
+            {fetching ? "Fetching…" : "Fetch 5y from Yahoo"}
+          </button>
+          <button
+            className="secondary"
+            disabled={fetching}
+            onClick={async () => {
+              setFetching(true);
+              setStatus("Loading sample fixtures…");
+              try {
+                const res = await apiPost("/provider/fetch?offline=true");
+                setStatus(JSON.stringify(res, null, 2));
+              } catch (e) {
+                setStatus(String(e));
+              } finally {
+                setFetching(false);
+              }
+            }}
+          >
+            Use sample data
+          </button>
+        </div>
+      </div>
+
+      <header className="page-head" style={{ marginTop: "0.5rem" }}>
+        <h1 style={{ fontSize: "1.35rem" }}>Optional file import</h1>
+        <p>
+          Drop a file for custom OHLCV, executed trades, or narrative notes.
+          Uploads are validated and never treated as executable instructions.
         </p>
       </header>
 

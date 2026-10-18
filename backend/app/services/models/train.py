@@ -86,6 +86,117 @@ def chronological_splits(
     return folds
 
 
+def fixed_session_holdout(
+    dates: np.ndarray,
+    *,
+    train_sessions: int = 90,
+    test_sessions: int = 5,
+) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
+    """Train on the prior N sessions; test on the most recent M sessions.
+
+    Sessions are unique trading dates shared across symbols (no random split).
+    Rows on the same session stay entirely in train or entirely in test.
+    """
+    # Normalize to python date so set membership is stable across
+    # Timestamp / datetime64 / tz-aware values.
+    session_dates = np.array(
+        [pd.Timestamp(d).date() for d in pd.to_datetime(dates)],
+        dtype=object,
+    )
+    uniq = np.array(sorted(set(session_dates)), dtype=object)
+    need = train_sessions + test_sessions
+    if len(uniq) < need:
+        raise ValueError(
+            f"Need at least {need} unique sessions for "
+            f"{train_sessions}d train / {test_sessions}d test; have {len(uniq)}"
+        )
+    test_set = set(uniq[-test_sessions:])
+    train_set = set(uniq[-need:-test_sessions])
+    train_idx = np.array([d in train_set for d in session_dates])
+    test_idx = np.array([d in test_set for d in session_dates])
+    if not train_idx.any() or not test_idx.any():
+        raise ValueError("Holdout split produced an empty train or test fold")
+    meta = {
+        "train_sessions": train_sessions,
+        "test_sessions": test_sessions,
+        "train_start": min(train_set).isoformat(),
+        "train_end": max(train_set).isoformat(),
+        "test_start": min(test_set).isoformat(),
+        "test_end": max(test_set).isoformat(),
+        "n_train_rows": int(train_idx.sum()),
+        "n_test_rows": int(test_idx.sum()),
+        "unique_train_sessions": len(train_set),
+        "unique_test_sessions": len(test_set),
+    }
+    return train_idx, test_idx, meta
+
+
+def holdout_success_verdict(
+    model_metrics: list[dict[str, Any]],
+    *,
+    min_accuracy: float = 0.55,
+    min_test_rows: int = 10,
+) -> dict[str, Any]:
+    """Transparent pass/fail for a fixed holdout — not a trading green light."""
+    usable = [
+        m
+        for m in model_metrics
+        if m.get("model_type") not in {"naive", "momentum"}
+        and m.get("accuracy") is not None
+    ]
+    if not usable:
+        return {
+            "passed": False,
+            "reason": "no_fitted_models",
+            "criterion": (
+                f"Best non-baseline accuracy >= {min_accuracy:.0%} "
+                f"on >= {min_test_rows} test rows, and beat naive"
+            ),
+        }
+    best = max(usable, key=lambda m: float(m["accuracy"]))
+    naive = next(
+        (m for m in model_metrics if m.get("model_type") == "naive"),
+        None,
+    )
+    n_test = int(best.get("n") or 0)
+    acc = float(best["accuracy"])
+    naive_acc = float(naive["accuracy"]) if naive and naive.get("accuracy") is not None else 0.5
+    passed = (
+        n_test >= min_test_rows
+        and acc >= min_accuracy
+        and acc > naive_acc
+    )
+    return {
+        "passed": passed,
+        "best_model": best.get("model_type"),
+        "best_accuracy": acc,
+        "naive_accuracy": naive_acc,
+        "n_test": n_test,
+        "criterion": (
+            f"Best non-baseline accuracy >= {min_accuracy:.0%} "
+            f"on >= {min_test_rows} test rows, and beat naive "
+            f"({naive_acc:.1%})"
+        ),
+        "reason": (
+            "passed_holdout_gate"
+            if passed
+            else (
+                "insufficient_test_rows"
+                if n_test < min_test_rows
+                else (
+                    "did_not_beat_chance_threshold"
+                    if acc < min_accuracy
+                    else "did_not_beat_naive"
+                )
+            )
+        ),
+        "note": (
+            "Passing this gate means directional accuracy looked better than "
+            "a simple baseline on one short holdout — not proven edge after costs."
+        ),
+    }
+
+
 def _version_tag(model_type: str, train_end: date, payload: str) -> str:
     digest = hashlib.sha256(payload.encode()).hexdigest()[:8]
     return f"{model_type}-{train_end.isoformat()}-{digest}"
@@ -95,8 +206,16 @@ def train_all_models(
     feature_frame: pd.DataFrame,
     artifact_dir: Path,
     horizon: str = "next_session_open_to_close",
+    *,
+    train_sessions: int | None = None,
+    test_sessions: int | None = None,
 ) -> list[TrainResult]:
-    """Fit naive, momentum, ridge/logistic, and LightGBM challenger."""
+    """Fit naive, momentum, ridge/logistic, and LightGBM challenger.
+
+    Default: chronological walk-forward folds.
+    With train_sessions + test_sessions: fixed holdout
+    (prior N sessions train, last M sessions test).
+    """
     artifact_dir.mkdir(parents=True, exist_ok=True)
     frame = feature_frame.copy()
     dates = pd.to_datetime(frame.index)
@@ -104,13 +223,33 @@ def train_all_models(
     y_reg = frame["target_next_session_oc"].to_numpy(dtype=float)
     y_clf = (y_reg > 0).astype(int)
 
-    train_start = pd.to_datetime(dates.min()).date()
-    train_end = pd.to_datetime(dates.max()).date()
+    holdout_meta: dict[str, Any] | None = None
+    if train_sessions is not None and test_sessions is not None:
+        train_idx, test_idx, holdout_meta = fixed_session_holdout(
+            dates.to_numpy(),
+            train_sessions=train_sessions,
+            test_sessions=test_sessions,
+        )
+        train_start = date.fromisoformat(holdout_meta["train_start"])
+        train_end = date.fromisoformat(holdout_meta["train_end"])
+        validation_label = (
+            f"fixed_holdout_{train_sessions}train_{test_sessions}test"
+        )
+    else:
+        folds = chronological_splits(dates.to_numpy())
+        train_idx, test_idx = folds[-1]
+        train_start = pd.to_datetime(dates.min()).date()
+        train_end = pd.to_datetime(dates.max()).date()
+        validation_label = "chronological_walk_forward"
+
     results: list[TrainResult] = []
 
-    # --- Naive baseline: predict 0 return / 0.5 prob ---
+    # --- Naive baseline: predict 0 return / 0.5 prob (evaluated on test) ---
     naive_metrics = _eval_predictions(
-        y_reg, np.zeros_like(y_reg), y_clf, np.full(len(y_clf), 0.5)
+        y_reg[test_idx],
+        np.zeros(int(test_idx.sum())),
+        y_clf[test_idx],
+        np.full(int(test_idx.sum()), 0.5),
     )
     results.append(
         TrainResult(
@@ -133,12 +272,17 @@ def train_all_models(
         )
     )
 
-    # --- Momentum baseline: sign of mom_20d ---
+    # --- Momentum baseline: sign of mom_20d (evaluated on test) ---
     if "mom_20d" in frame.columns:
         mom = frame["mom_20d"].to_numpy(dtype=float)
         mom_pred = np.nan_to_num(mom, nan=0.0)
         mom_prob = 1 / (1 + np.exp(-5 * mom_pred))
-        mom_metrics = _eval_predictions(y_reg, mom_pred, y_clf, mom_prob)
+        mom_metrics = _eval_predictions(
+            y_reg[test_idx],
+            mom_pred[test_idx],
+            y_clf[test_idx],
+            mom_prob[test_idx],
+        )
         results.append(
             TrainResult(
                 model_type="momentum",
@@ -158,11 +302,7 @@ def train_all_models(
             )
         )
 
-    folds = chronological_splits(dates.to_numpy())
-    # Fit linear / tree on last train fold for artifacts; report OOS mean
-    train_idx, test_idx = folds[-1]
-
-    # Imputer/scaler fit on train only
+    # Fit linear / tree on train fold only; score holdout / OOS test
     imputer = SimpleImputer(strategy="median")
     scaler = StandardScaler()
     x_train = imputer.fit_transform(x[train_idx])
@@ -335,7 +475,9 @@ def train_all_models(
         }
         r.metrics["n_train"] = int(train_idx.sum())
         r.metrics["n_test"] = int(test_idx.sum())
-        r.metrics["validation"] = "chronological_walk_forward"
+        r.metrics["validation"] = validation_label
+        if holdout_meta:
+            r.metrics["holdout"] = holdout_meta
     return results
 
 

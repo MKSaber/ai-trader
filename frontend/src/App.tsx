@@ -15,7 +15,7 @@ import { DriftPage } from "./pages/DriftPage";
 
 const links = [
   ["/", "Overview"],
-  ["/upload", "Import"],
+  ["/upload", "Data"],
   ["/coverage", "Coverage"],
   ["/stocks", "Stocks"],
   ["/forecasts", "Forecasts"],

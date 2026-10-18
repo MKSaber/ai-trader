@@ -40,12 +40,24 @@ export function HomePage() {
         <div className="eyebrow">London equity research</div>
         <h1>Clarity before conviction.</h1>
         <p>
-          Import market data, learn interpretable patterns, and paper-trade
-          setups — without promising an edge.
+          Fetch LSE market data from Yahoo, learn interpretable patterns, and
+          paper-trade setups — without promising an edge.
         </p>
         <div className="actions">
-          <Link className="btn" to="/upload">
-            Import data
+          <button
+            disabled={!!busy}
+            onClick={() =>
+              run("yahoo", () =>
+                apiPost(
+                  "/provider/fetch?offline=false&lookback_days=1825&symbols=VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
+                ),
+              )
+            }
+          >
+            {busy === "yahoo" ? "Fetching…" : "Fetch 5y from Yahoo"}
+          </button>
+          <Link className="btn secondary" to="/upload">
+            Data &amp; symbols
           </Link>
           <button
             className="secondary"
@@ -56,7 +68,7 @@ export function HomePage() {
               )
             }
           >
-            {busy === "fixture" ? "Loading…" : "Try sample data"}
+            {busy === "fixture" ? "Loading…" : "Sample data"}
           </button>
         </div>
         {health && (
@@ -73,9 +85,9 @@ export function HomePage() {
         {[
           {
             i: 0,
-            icon: "↑",
-            title: "Import with care",
-            body: "OHLCV, trades, and commentary stay separate. Missing data disables predictions — never invents them.",
+            icon: "↓",
+            title: "Live prices, not uploads",
+            body: "Yahoo Finance via yfinance fills daily and intraday bars. File import stays optional for trades and notes.",
             to: "/upload",
           },
           {
@@ -109,20 +121,33 @@ export function HomePage() {
       <div className="actions" style={{ marginTop: "2rem" }}>
         <button
           disabled={!!busy}
+          onClick={() =>
+            run("rolling", () =>
+              apiPost(
+                "/research/rolling?train_sessions=85&test_sessions=5&step_sessions=5&fetch=true&lookback_days=1825",
+              ),
+            )
+          }
+        >
+          {busy === "rolling" ? "Rolling…" : "Rolling 85→5 walk-forward"}
+        </button>
+        <button
+          className="secondary"
+          disabled={!!busy}
           onClick={() => run("train", () => apiPost("/research/train"))}
         >
-          {busy === "train" ? "Training…" : "Train models"}
+          {busy === "train" ? "Training…" : "Train walk-forward"}
         </button>
         <button
           className="secondary"
           disabled={!!busy}
           onClick={() =>
             run("pipeline", () =>
-              apiPost("/pipeline/run", { offline: true, dry_run: false }),
+              apiPost("/pipeline/run", { offline: false, dry_run: false }),
             )
           }
         >
-          {busy === "pipeline" ? "Running…" : "Run offline pipeline"}
+          {busy === "pipeline" ? "Running…" : "Run live pipeline"}
         </button>
       </div>
 

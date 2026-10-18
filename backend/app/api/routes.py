@@ -38,6 +38,8 @@ from app.services.ingestion.persist import (
 from app.services.research import (
     issue_predictions,
     resolve_predictions,
+    run_holdout_eval,
+    run_rolling_eval,
     train_and_register,
 )
 router = APIRouter()
@@ -295,7 +297,141 @@ def list_uploads(db: Session = Depends(get_db)) -> list[dict[str, Any]]:
 @router.post("/research/train")
 def train(db: Session = Depends(get_db)) -> dict[str, Any]:
     """Train baselines and challengers."""
-    return train_and_register(db)
+    try:
+        return train_and_register(db)
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Training failed: {exc}",
+        ) from exc
+
+
+def _yahoo_fetch_into_db(
+    db: Session,
+    *,
+    symbols: list[str],
+    lookback_days: int,
+    offline: bool = False,
+) -> dict[str, Any]:
+    """Shared Yahoo/fixture fetch used by provider + research endpoints."""
+    from datetime import timedelta
+
+    from app.services.ingestion.persist import persist_intraday_bars
+
+    provider = get_market_data_provider(force_offline=offline)
+    end = date.today()
+    # Cap at ~10y calendar; default path uses 5y (1825d)
+    lookback = max(5, min(int(lookback_days), 3650))
+    start = end - timedelta(days=lookback)
+    daily = provider.fetch_daily(symbols, start, end)
+    if not daily and provider.name == "yfinance" and not offline:
+        raise HTTPException(
+            502,
+            "yfinance returned no data. Not substituting synthetic. "
+            "Retry later or use offline=true for fixtures.",
+        )
+    batch = start_batch(db, provider_key=provider.name, session_date=end)
+    n_d = persist_daily_bars(db, daily, batch)
+    start_dt = datetime.now(timezone.utc) - timedelta(days=5)
+    end_dt = datetime.now(timezone.utc)
+    intra = provider.fetch_intraday(
+        symbols, start_dt, end_dt, interval_minutes=5
+    )
+    n_i = persist_intraday_bars(db, intra, batch, interval_minutes=5)
+    complete_batch(db, batch)
+    db.commit()
+    return {
+        "provider": provider.name,
+        "symbols": symbols,
+        "lookback_days": lookback,
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "daily_stored": n_d,
+        "intraday_stored": n_i,
+        "daily_fetched": len(daily),
+        "note": (
+            "Daily history can span years; yfinance intraday is still "
+            "~60 days max."
+        ),
+    }
+
+
+@router.post("/research/holdout")
+def holdout(
+    train_sessions: int = 85,
+    test_sessions: int = 5,
+    fetch: bool = True,
+    lookback_days: int = 1825,
+    symbols: str = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Single holdout: train prior N sessions, test last M."""
+    syms = [s.strip() for s in symbols.split(",") if s.strip()]
+    fetch_info = None
+    if fetch:
+        fetch_info = _yahoo_fetch_into_db(
+            db, symbols=syms, lookback_days=lookback_days
+        )
+    try:
+        result = run_holdout_eval(
+            db,
+            train_sessions=max(20, train_sessions),
+            test_sessions=max(1, test_sessions),
+        )
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Holdout eval failed: {exc}",
+        ) from exc
+    if result.get("status") == "insufficient_data":
+        raise HTTPException(400, detail=result)
+    result["fetch"] = fetch_info
+    return result
+
+
+@router.post("/research/rolling")
+def rolling(
+    train_sessions: int = 85,
+    test_sessions: int = 5,
+    step_sessions: int = 5,
+    max_folds: int | None = None,
+    min_prob: float = 0.55,
+    fetch: bool = True,
+    lookback_days: int = 1825,
+    symbols: str = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
+    db: Session = Depends(get_db),
+) -> dict[str, Any]:
+    """Rolling walk-forward: 85 train / 5 test, slide across history.
+
+    Also scores ATR stop/take-profit paper trades and returns recommendations.
+    """
+    syms = [s.strip() for s in symbols.split(",") if s.strip()]
+    fetch_info = None
+    if fetch:
+        fetch_info = _yahoo_fetch_into_db(
+            db, symbols=syms, lookback_days=lookback_days
+        )
+    try:
+        result = run_rolling_eval(
+            db,
+            train_sessions=max(20, train_sessions),
+            test_sessions=max(1, test_sessions),
+            step_sessions=max(1, step_sessions),
+            max_folds=max_folds,
+            min_prob=min_prob,
+        )
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Rolling walk-forward failed: {exc}",
+        ) from exc
+    if result.get("status") == "insufficient_data":
+        raise HTTPException(400, detail=result)
+    result["fetch"] = fetch_info
+    return result
 
 
 @router.post("/research/predict")
@@ -551,43 +687,18 @@ def pipeline_run(body: PipelineBody, db: Session = Depends(get_db)) -> dict[str,
 @router.post("/provider/fetch")
 def provider_fetch(
     offline: bool = False,
-    symbols: str = "VOD.L,BP.L,HSBA.L",
+    symbols: str = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
+    lookback_days: int = 1825,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Fetch recent daily (+ best-effort intraday) from configured provider."""
-    from datetime import timedelta
-
-    from app.services.ingestion.persist import persist_intraday_bars
-
-    provider = get_market_data_provider(force_offline=offline)
+    """Fetch daily history (default ~5 years) + best-effort recent intraday."""
     syms = [s.strip() for s in symbols.split(",") if s.strip()]
-    end = date.today()
-    start = end - timedelta(days=40)
-    daily = provider.fetch_daily(syms, start, end)
-    if not daily and provider.name == "yfinance" and not offline:
-        raise HTTPException(
-            502,
-            "yfinance returned no data. Not substituting synthetic. "
-            "Retry later or use offline=true for fixtures.",
-        )
-    batch = start_batch(db, provider_key=provider.name, session_date=end)
-    n_d = persist_daily_bars(db, daily, batch)
-    # Intraday last 5 days
-    start_dt = datetime.now(timezone.utc) - timedelta(days=5)
-    end_dt = datetime.now(timezone.utc)
-    intra = provider.fetch_intraday(syms, start_dt, end_dt, interval_minutes=5)
-    n_i = persist_intraday_bars(db, intra, batch, interval_minutes=5)
-    complete_batch(db, batch)
-    db.commit()
-    return {
-        "provider": provider.name,
-        "daily_stored": n_d,
-        "intraday_stored": n_i,
-        "note": (
-            "Downloaded market bars are not paper executions. "
-            "yfinance intraday lookback is typically ~60 days."
-        ),
-    }
+    return _yahoo_fetch_into_db(
+        db,
+        symbols=syms,
+        lookback_days=lookback_days,
+        offline=offline,
+    )
 
 
 @router.get("/settings")

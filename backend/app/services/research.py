@@ -15,7 +15,12 @@ from app.db import models as m
 from app.domain.enums import ModelStatus
 from app.services.eval.costs import load_cost_assumptions
 from app.services.features.pipeline import build_daily_features
-from app.services.models.train import predict_with_artifact, train_all_models
+from app.services.eval.rolling import run_rolling_walkforward
+from app.services.models.train import (
+    holdout_success_verdict,
+    predict_with_artifact,
+    train_all_models,
+)
 
 
 def load_daily_bars_frame(db: Session) -> pd.DataFrame:
@@ -72,24 +77,37 @@ def train_and_register(db: Session, artifact_root: Path | None = None) -> dict[s
     root.mkdir(parents=True, exist_ok=True)
     results = train_all_models(feat.frame, root, horizon=settings.default_horizon)
 
+    run_stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     exp = m.Experiment(
-        name=f"train-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}",
-        config={"horizon": settings.default_horizon, "costs": load_cost_assumptions().to_dict()},
+        name=f"train-{run_stamp}",
+        config={
+            "horizon": settings.default_horizon,
+            "costs": load_cost_assumptions().to_dict(),
+        },
         metrics={"n_rows": len(feat.frame), "excluded": feat.excluded},
     )
     db.add(exp)
     db.flush()
 
-    created = []
-    # Promote best linear interpretable by AUC among ridge/logistic as candidate;
-    # champion remains manual — auto-set first champion only if none exists.
+    created: list[str] = []
+    skipped: list[str] = []
+    # Champion remains manual — auto-set first champion only if none exists.
     existing_champion = db.scalar(
         select(m.ModelRecord).where(m.ModelRecord.status == ModelStatus.CHAMPION)
     )
 
     for r in results:
+        # Content digest alone can collide on retrain with same data —
+        # suffix each registration with the experiment run stamp.
+        version = f"{r.version}-r{run_stamp}"
+        already = db.scalar(
+            select(m.ModelRecord).where(m.ModelRecord.version == version)
+        )
+        if already:
+            skipped.append(version)
+            continue
         rec = m.ModelRecord(
-            version=r.version,
+            version=version,
             model_type=r.model_type,
             status=ModelStatus.CANDIDATE,
             artifact_path=r.artifact_path,
@@ -102,16 +120,19 @@ def train_and_register(db: Session, artifact_root: Path | None = None) -> dict[s
             metrics=r.metrics,
         )
         db.add(rec)
-        created.append(r.version)
+        created.append(version)
 
     db.flush()
 
-    if existing_champion is None:
-        # Seed champion from logistic if present else naive
+    if existing_champion is None and created:
+        # Seed champion from this run's logistic if present else first created
         pick = db.scalar(
-            select(m.ModelRecord).where(m.ModelRecord.model_type == "logistic")
+            select(m.ModelRecord).where(
+                m.ModelRecord.experiment_id == exp.id,
+                m.ModelRecord.model_type == "logistic",
+            )
         ) or db.scalar(
-            select(m.ModelRecord).where(m.ModelRecord.model_type == "naive")
+            select(m.ModelRecord).where(m.ModelRecord.experiment_id == exp.id)
         )
         if pick:
             pick.status = ModelStatus.CHAMPION
@@ -122,11 +143,233 @@ def train_and_register(db: Session, artifact_root: Path | None = None) -> dict[s
         "status": "ok",
         "experiment_id": exp.id,
         "models": created,
+        "skipped": skipped,
         "excluded_features": feat.excluded,
         "n_rows": len(feat.frame),
         "costs": load_cost_assumptions().to_dict(),
-        "note": "Champion promotion remains manual for challengers after the first seed.",
+        "note": (
+            "Champion promotion remains manual for challengers after the first seed. "
+            "Each train run registers new version tags even if formulas are identical."
+        ),
     }
+
+
+def run_holdout_eval(
+    db: Session,
+    *,
+    train_sessions: int = 90,
+    test_sessions: int = 5,
+    artifact_root: Path | None = None,
+) -> dict[str, Any]:
+    """Train on prior N sessions; score the most recent M sessions.
+
+    Returns a transparent pass/fail gate on directional accuracy vs naive.
+    Passing is not a claim of profitable edge after costs.
+    """
+    settings = get_settings()
+    frame = load_daily_bars_frame(db)
+    if frame.empty:
+        return {
+            "status": "insufficient_data",
+            "message": "No daily bars. Fetch from Yahoo first.",
+        }
+
+    feat = build_daily_features(frame)
+    uniq_sessions = (
+        pd.to_datetime(feat.frame.index).normalize().unique()
+        if not feat.frame.empty
+        else []
+    )
+    need = train_sessions + test_sessions
+    if len(uniq_sessions) < need:
+        return {
+            "status": "insufficient_data",
+            "message": (
+                f"Need >= {need} labelled trading sessions for "
+                f"{train_sessions} train + {test_sessions} test; "
+                f"have {len(uniq_sessions)}. Fetch more Yahoo history "
+                f"(~{need + 30} calendar days recommended for feature warm-up)."
+            ),
+            "unique_sessions": int(len(uniq_sessions)),
+            "excluded_features": feat.excluded,
+        }
+
+    root = Path(artifact_root or Path(settings.local_storage_root) / "models")
+    run_stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    out_dir = root / f"holdout-{train_sessions}-{test_sessions}-{run_stamp}"
+    try:
+        results = train_all_models(
+            feat.frame,
+            out_dir,
+            horizon=settings.default_horizon,
+            train_sessions=train_sessions,
+            test_sessions=test_sessions,
+        )
+    except ValueError as exc:
+        return {"status": "insufficient_data", "message": str(exc)}
+
+    exp = m.Experiment(
+        name=f"holdout-{train_sessions}-{test_sessions}-{run_stamp}",
+        config={
+            "horizon": settings.default_horizon,
+            "train_sessions": train_sessions,
+            "test_sessions": test_sessions,
+            "costs": load_cost_assumptions().to_dict(),
+            "protocol": "fixed_session_holdout",
+        },
+        metrics={},
+    )
+    db.add(exp)
+    db.flush()
+
+    model_summaries: list[dict[str, Any]] = []
+    created: list[str] = []
+    for r in results:
+        version = f"{r.version}-h{train_sessions}x{test_sessions}-r{run_stamp}"
+        already = db.scalar(
+            select(m.ModelRecord).where(m.ModelRecord.version == version)
+        )
+        if already:
+            continue
+        rec = m.ModelRecord(
+            version=version,
+            model_type=r.model_type,
+            status=ModelStatus.CANDIDATE,
+            artifact_path=r.artifact_path,
+            formula=r.formula,
+            feature_importance=r.feature_importance,
+            train_start=r.train_start,
+            train_end=r.train_end,
+            horizon=r.horizon,
+            experiment_id=exp.id,
+            metrics=r.metrics,
+        )
+        db.add(rec)
+        created.append(version)
+        model_summaries.append(
+            {
+                "model_type": r.model_type,
+                "version": version,
+                "accuracy": (r.metrics or {}).get("accuracy"),
+                "auc": (r.metrics or {}).get("auc"),
+                "r2": (r.metrics or {}).get("r2"),
+                "pearson_ic": (r.metrics or {}).get("pearson_ic"),
+                "n": (r.metrics or {}).get("n"),
+                "n_train": (r.metrics or {}).get("n_train"),
+                "n_test": (r.metrics or {}).get("n_test"),
+                "holdout": (r.metrics or {}).get("holdout"),
+            }
+        )
+
+    verdict = holdout_success_verdict(model_summaries)
+    exp.metrics = {
+        "verdict": verdict,
+        "models": model_summaries,
+        "n_feature_rows": len(feat.frame),
+    }
+    db.commit()
+
+    return {
+        "status": "ok",
+        "experiment_id": exp.id,
+        "protocol": {
+            "train_sessions": train_sessions,
+            "test_sessions": test_sessions,
+            "holdout": (model_summaries[0].get("holdout") if model_summaries else None),
+        },
+        "models": model_summaries,
+        "registered": created,
+        "success": verdict,
+        "excluded_features": feat.excluded,
+        "costs": load_cost_assumptions().to_dict(),
+        "note": (
+            "Trained only on sessions before the test window. "
+            "Test metrics are out-of-sample for those last sessions. "
+            "success.passed is a directional gate, not a profit claim."
+        ),
+    }
+
+
+def run_rolling_eval(
+    db: Session,
+    *,
+    train_sessions: int = 85,
+    test_sessions: int = 5,
+    step_sessions: int = 5,
+    max_folds: int | None = None,
+    min_prob: float = 0.55,
+) -> dict[str, Any]:
+    """Rolling 85/5 walk-forward with stop/TP paper scoring + tips."""
+    settings = get_settings()
+    frame = load_daily_bars_frame(db)
+    if frame.empty:
+        return {
+            "status": "insufficient_data",
+            "message": "No daily bars. Fetch ~5y from Yahoo first.",
+        }
+    feat = build_daily_features(frame)
+    uniq = (
+        len(pd.to_datetime(feat.frame.index).normalize().unique())
+        if not feat.frame.empty
+        else 0
+    )
+    need = train_sessions + test_sessions
+    if uniq < need:
+        return {
+            "status": "insufficient_data",
+            "message": (
+                f"Need >= {need} labelled sessions for rolling "
+                f"{train_sessions}/{test_sessions}; have {uniq}. "
+                "Fetch lookback_days=1825 (5y)."
+            ),
+            "unique_sessions": uniq,
+        }
+
+    result = run_rolling_walkforward(
+        feat.frame,
+        frame,
+        train_sessions=train_sessions,
+        test_sessions=test_sessions,
+        step_sessions=step_sessions,
+        max_folds=max_folds,
+        min_prob=min_prob,
+        artifact_dir=Path(settings.local_storage_root) / "models" / "rolling",
+    )
+
+    # Enrich recommendations with yahoo symbols
+    id_to_sym = {
+        r.id: r.yahoo_symbol
+        for r in db.scalars(select(m.Instrument)).all()
+    }
+    for tip in result.get("recommendations") or []:
+        tip["symbol"] = id_to_sym.get(tip.get("instrument_id"), tip.get("instrument_id"))
+    for trade in result.get("sample_trades") or []:
+        trade["symbol"] = id_to_sym.get(
+            trade.get("instrument_id"), trade.get("instrument_id")
+        )
+
+    run_stamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    exp = m.Experiment(
+        name=f"rolling-{train_sessions}x{test_sessions}-{run_stamp}",
+        config={
+            "protocol": "rolling_walkforward",
+            "train_sessions": train_sessions,
+            "test_sessions": test_sessions,
+            "step_sessions": step_sessions,
+            "min_prob": min_prob,
+            "costs": load_cost_assumptions().to_dict(),
+        },
+        metrics={
+            "direction_success": result.get("direction_success"),
+            "trading": result.get("trading"),
+            "models": result.get("models"),
+            "protocol": result.get("protocol"),
+        },
+    )
+    db.add(exp)
+    db.commit()
+    result["experiment_id"] = exp.id
+    return result
 
 
 def issue_predictions(db: Session, model_id: int | None = None) -> dict[str, Any]:

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { apiGet } from "../api/client";
+import { apiGet, apiPost } from "../api/client";
 
 type Coverage = {
   instruments: number;
@@ -10,10 +10,30 @@ type Coverage = {
 
 export function CoveragePage() {
   const [data, setData] = useState<Coverage | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState("");
+
+  const load = () => apiGet<Coverage>("/coverage").then(setData);
 
   useEffect(() => {
-    apiGet<Coverage>("/coverage").then(setData);
+    load().catch(() => setData(null));
   }, []);
+
+  async function fetchYahoo() {
+    setBusy(true);
+    setNote("");
+    try {
+      const res = await apiPost<Record<string, unknown>>(
+        "/provider/fetch?offline=false&lookback_days=1825&symbols=VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
+      );
+      setNote(JSON.stringify(res, null, 2));
+      await load();
+    } catch (e) {
+      setNote(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div>
@@ -23,6 +43,12 @@ export function CoveragePage() {
           What we have — and what we still need before making claims.
         </p>
       </header>
+
+      <div className="actions left" style={{ marginBottom: "1.25rem" }}>
+        <button disabled={busy} onClick={fetchYahoo}>
+          {busy ? "Fetching…" : "Fetch 5y from Yahoo"}
+        </button>
+      </div>
 
       {data?.warnings?.map((w) => (
         <div className="banner" key={w}>
@@ -42,6 +68,13 @@ export function CoveragePage() {
           </div>
         ))}
       </div>
+
+      {note && (
+        <div className="card" style={{ marginTop: "1.25rem" }}>
+          <h3>Last fetch</h3>
+          <pre className="mono">{note}</pre>
+        </div>
+      )}
     </div>
   );
 }

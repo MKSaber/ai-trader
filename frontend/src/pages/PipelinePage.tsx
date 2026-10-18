@@ -39,26 +39,6 @@ export function PipelinePage() {
             setBusy(true);
             try {
               const r = await apiPost<Record<string, unknown>>("/pipeline/run", {
-                offline: true,
-              });
-              setLast(JSON.stringify(r, null, 2));
-              await load();
-            } catch (e) {
-              setLast(String(e));
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          {busy ? "Running…" : "Run offline now"}
-        </button>
-        <button
-          className="secondary"
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              const r = await apiPost<Record<string, unknown>>("/pipeline/run", {
                 offline: false,
               });
               setLast(JSON.stringify(r, null, 2));
@@ -70,7 +50,27 @@ export function PipelinePage() {
             }
           }}
         >
-          Run with yfinance
+          {busy ? "Running…" : "Run with Yahoo"}
+        </button>
+        <button
+          className="secondary"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              const r = await apiPost<Record<string, unknown>>("/pipeline/run", {
+                offline: true,
+              });
+              setLast(JSON.stringify(r, null, 2));
+              await load();
+            } catch (e) {
+              setLast(String(e));
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Run offline (sample)
         </button>
       </div>
 

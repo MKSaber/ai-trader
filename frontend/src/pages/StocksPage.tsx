@@ -50,7 +50,7 @@ export function StocksPage() {
         <div className="card">
           <h3>Universe</h3>
           {list.length === 0 ? (
-            <p className="empty">Import or fetch data to see symbols.</p>
+            <p className="empty">Fetch from Yahoo (Data page) to see symbols.</p>
           ) : (
             <div className="table-wrap">
               <table>
