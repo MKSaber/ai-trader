@@ -1,0 +1,39 @@
+{
+  "starting_cash_gbp": 20000,
+  "universe": [
+    "HSBA.L",
+    "AZN.L",
+    "SHEL.L",
+    "RIO.L",
+    "BATS.L",
+    "ULVR.L",
+    "BP.L",
+    "GSK.L",
+    "NG.L",
+    "REL.L"
+  ],
+  "rules": "trade-rules-v2.2",
+  "broker": "trading212",
+  "windows": {
+    "60d": {"v22_pnl": 620.08, "v21_pnl": -314.19},
+    "90d": {
+      "v22_pnl": 1177.07,
+      "v22_return_pct": 5.8854,
+      "v22_trades": 14,
+      "v22_wins": 4,
+      "v22_losses": 10,
+      "v21_pnl": -1273.9,
+      "v21_trades": 69
+    },
+    "120d": {
+      "v22_pnl": 741.67,
+      "v22_return_pct": 3.7083,
+      "v22_trades": 17,
+      "v22_wins": 4,
+      "v22_losses": 13,
+      "v21_pnl": -2058.76,
+      "v21_trades": 90
+    }
+  },
+  "note": "Yahoo 60m via 730d period; all symbols had full 90/120 trading-day coverage. Still in-sample research."
+}

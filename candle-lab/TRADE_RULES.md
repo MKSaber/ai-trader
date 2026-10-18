@@ -37,9 +37,12 @@ best dual-+ve pick. Rejected: min_stop 1.5% (over-filtered to 0 trades with
 hours 11/15) and trail-to-breakeven (hurt 60d). Still in-sample research —
 not guaranteed live edge.
 
+**Longer stress (top-10 · £20k · T212):** v2.2 stayed green at **90d +£1,177**
+and **120d +£742**; v2.1 was −£1,274 / −£2,059 on the same windows.
+
 ```bash
 cd candle-lab/backend && . .venv/bin/activate
-python scripts/portfolio_20d.py --days 60 --cash 20000 --rules trade-rules-v2.2 --broker trading212
+python scripts/portfolio_20d.py --days 120 --cash 20000 --rules trade-rules-v2.2 --broker trading212
 ```
 
 
