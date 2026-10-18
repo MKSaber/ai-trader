@@ -1,0 +1,47 @@
+{
+  "days": 60,
+  "starting_cash_gbp": 20000,
+  "universe": [
+    "HSBA.L",
+    "AZN.L",
+    "SHEL.L",
+    "RIO.L",
+    "BATS.L",
+    "ULVR.L",
+    "BP.L",
+    "GSK.L",
+    "NG.L",
+    "REL.L"
+  ],
+  "v2.1": {
+    "final_cash_gbp": 19685.81,
+    "pnl_gbp": -314.19,
+    "return_pct": -1.5709,
+    "trades": 48,
+    "wins": 13,
+    "losses": 35,
+    "pnl_by_symbol": {
+      "AZN.L": -477.8,
+      "BATS.L": -65.17,
+      "BP.L": 131.66,
+      "GSK.L": -304.94,
+      "HSBA.L": -71.75,
+      "NG.L": -138.31,
+      "REL.L": -142.6,
+      "RIO.L": -116.1,
+      "SHEL.L": 507.79,
+      "ULVR.L": 363.04
+    }
+  },
+  "v2_compare": {
+    "final_cash_gbp": 19546.37,
+    "pnl_gbp": -453.63,
+    "return_pct": -2.2682,
+    "trades": 74
+  },
+  "vs_30d_v21": {
+    "30d_pnl": 419.82,
+    "60d_pnl": -314.19,
+    "note": "Second 30d stretch erased the first-half edge; AZN/GSK large drags."
+  }
+}
