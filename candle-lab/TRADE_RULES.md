@@ -34,4 +34,8 @@ the search — treat as research evidence, not out-of-sample proof.
 ```bash
 cd candle-lab/backend && . .venv/bin/activate
 python scripts/backtest_20d.py --days 10 --rules trade-rules-v2 --broker trading212
+# Shared £20k book, wider LSE set, 20 days:
+python scripts/portfolio_20d.py --days 20 --cash 20000 --broker trading212
 ```
+
+Human checklist (IG shapes → entry / stop / take-profit): [IG_PLAYBOOK.md](IG_PLAYBOOK.md).

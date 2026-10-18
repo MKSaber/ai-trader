@@ -1,0 +1,40 @@
+{
+  "ig_playbook": "candle-lab/IG_PLAYBOOK.md",
+  "universe": [
+    "VOD.L",
+    "BP.L",
+    "HSBA.L",
+    "GSK.L",
+    "AZN.L",
+    "SHEL.L",
+    "ULVR.L",
+    "LLOY.L",
+    "BARC.L",
+    "RIO.L",
+    "BATS.L",
+    "DGE.L",
+    "NG.L",
+    "RR.L",
+    "GLEN.L"
+  ],
+  "rules": "trade-rules-v2",
+  "broker": "trading212",
+  "starting_cash_gbp": 20000,
+  "day1_assumption": "Start Monday of the 20-session window with \u00a320,000 shared cash; trade-rules-v2 on 60m IG patterns across 15 LSE names.",
+  "after_20_days": {
+    "final_cash_gbp": 20056.68,
+    "pnl_gbp": 56.68,
+    "return_pct": 0.2834,
+    "trades": 52,
+    "wins": 16,
+    "losses": 36
+  },
+  "safety_30_days": {
+    "final_cash_gbp": 19606.78,
+    "pnl_gbp": -393.22,
+    "return_pct": -1.9661,
+    "trades": 67
+  },
+  "verdict_20d": "slightly_positive",
+  "caveat": "30d window is negative \u2014 edge not robust out of the original 10d/5-name fit."
+}
