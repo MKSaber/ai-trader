@@ -1,0 +1,418 @@
+{
+  "detector_version": "patterns-v1",
+  "trade_rules_version": "trade-rules-v1",
+  "cost_profile": "trading212",
+  "cost_profile_label": "Trading 212 Invest (GBP\u2192LSE): \u00a30 commission, 0.5% SDRT, PTM \u00a31.50>$10k",
+  "costs": {
+    "commission_bps": 0.0,
+    "spread_bps": 5.0,
+    "slippage_bps": 2.0,
+    "stamp_duty_rate": 0.005,
+    "fx_bps": 0.0,
+    "flat_commission_gbp": 0.0,
+    "ptm_levy_gbp": 1.5,
+    "ptm_threshold_gbp": 10000.0,
+    "sources": "candle-lab/COST_SOURCES.md"
+  },
+  "days_requested": 15,
+  "symbols": [
+    "VOD.L",
+    "BP.L",
+    "HSBA.L",
+    "GSK.L",
+    "AZN.L"
+  ],
+  "starting_cash_gbp_per_symbol": 100000.0,
+  "feed": [
+    {
+      "symbol": "VOD.L",
+      "healthy": true,
+      "raw_bars": 6118,
+      "filtered_bars": 1530,
+      "trading_days": 15,
+      "first": "2026-09-28 07:00:00+00:00",
+      "last": "2026-10-16 15:25:00+00:00",
+      "message": "DELAYED Yahoo Finance via yfinance \u2014 not real-time."
+    },
+    {
+      "symbol": "BP.L",
+      "healthy": true,
+      "raw_bars": 6118,
+      "filtered_bars": 1529,
+      "trading_days": 15,
+      "first": "2026-09-28 07:00:00+00:00",
+      "last": "2026-10-16 15:25:00+00:00",
+      "message": "DELAYED Yahoo Finance via yfinance \u2014 not real-time."
+    },
+    {
+      "symbol": "HSBA.L",
+      "healthy": true,
+      "raw_bars": 6119,
+      "filtered_bars": 1530,
+      "trading_days": 15,
+      "first": "2026-09-28 07:00:00+00:00",
+      "last": "2026-10-16 15:25:00+00:00",
+      "message": "DELAYED Yahoo Finance via yfinance \u2014 not real-time."
+    },
+    {
+      "symbol": "GSK.L",
+      "healthy": true,
+      "raw_bars": 6118,
+      "filtered_bars": 1529,
+      "trading_days": 15,
+      "first": "2026-09-28 07:00:00+00:00",
+      "last": "2026-10-16 15:25:00+00:00",
+      "message": "DELAYED Yahoo Finance via yfinance \u2014 not real-time."
+    },
+    {
+      "symbol": "AZN.L",
+      "healthy": true,
+      "raw_bars": 6117,
+      "filtered_bars": 1529,
+      "trading_days": 15,
+      "first": "2026-09-28 07:00:00+00:00",
+      "last": "2026-10-16 15:25:00+00:00",
+      "message": "DELAYED Yahoo Finance via yfinance \u2014 not real-time."
+    }
+  ],
+  "pattern_totals": {
+    "bullish_engulfing": 485,
+    "shooting_star": 95,
+    "bearish_engulfing": 447,
+    "hammer": 119
+  },
+  "trade_count": 262,
+  "wins": 4,
+  "losses": 258,
+  "win_rate": 0.015267175572519083,
+  "total_realized_pnl_gbp": -18507.3962,
+  "portfolio_start_gbp": 500000.0,
+  "portfolio_end_gbp": 481492.6,
+  "portfolio_return_pct": -3.7015,
+  "profitable": false,
+  "disclaimer": "Paper simulation on DELAYED Yahoo 5m bars. Broker/tax costs follow COST_SOURCES.md (GOV.UK SDRT, Takeover Panel PTM, T212/eToro schedules). Spread/slippage are market-friction assumptions. Not live execution proof.",
+  "exit_reason_counts": {
+    "bearish_shooting_star": 33,
+    "take_profit": 37,
+    "bearish_bearish_engulfing": 93,
+    "stop_loss": 84,
+    "session_flat": 15
+  },
+  "per_symbol": [
+    {
+      "symbol": "VOD.L",
+      "trading_days": 15,
+      "bars": 1530,
+      "patterns": {
+        "bullish_engulfing": 67,
+        "shooting_star": 20,
+        "bearish_engulfing": 71,
+        "hammer": 24
+      },
+      "trade_count": 35,
+      "realized_pnl": -2615.64,
+      "wins": 2,
+      "losses": 33,
+      "expired_setups": 31,
+      "sample_trades": [
+        {
+          "symbol": "VOD.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T07:25:00+00:00",
+          "entry_trigger": 126.7633469467163,
+          "stop": 126.28682347488405,
+          "target": 127.7163938903808,
+          "status": "closed",
+          "qty": 78.85167333338609,
+          "entry_price": 126.82039045284233,
+          "exit_price": 126.6869684944153,
+          "exit_reason": "bearish_shooting_star",
+          "ambiguous": false,
+          "pnl_gbp": -69.5158
+        },
+        {
+          "symbol": "VOD.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T12:05:00+00:00",
+          "entry_trigger": 126.66329847335815,
+          "stop": 126.33680152511597,
+          "target": 127.31629236984251,
+          "status": "closed",
+          "qty": 78.85909880951736,
+          "entry_price": 126.72029695767117,
+          "exit_price": 127.25900003827608,
+          "exit_reason": "take_profit",
+          "ambiguous": false,
+          "pnl_gbp": -17.9965
+        },
+        {
+          "symbol": "VOD.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T13:40:00+00:00",
+          "entry_trigger": 127.2635969467163,
+          "stop": 126.83655152511598,
+          "target": 128.11768778991694,
+          "status": "closed",
+          "qty": 78.47298813354395,
+          "entry_price": 127.32086556534233,
+          "exit_price": 126.99283055038453,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -84.6787
+        }
+      ]
+    },
+    {
+      "symbol": "BP.L",
+      "trading_days": 15,
+      "bars": 1529,
+      "patterns": {
+        "bullish_engulfing": 89,
+        "bearish_engulfing": 93,
+        "hammer": 14,
+        "shooting_star": 15
+      },
+      "trade_count": 47,
+      "realized_pnl": -3154.49,
+      "wins": 0,
+      "losses": 47,
+      "expired_setups": 27,
+      "sample_trades": [
+        {
+          "symbol": "BP.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T08:00:00+00:00",
+          "entry_trigger": 563.8817755737305,
+          "stop": 562.2796936340333,
+          "target": 567.0859394531249,
+          "status": "closed",
+          "qty": 17.726237053714097,
+          "entry_price": 564.1355223727387,
+          "exit_price": 563.5462777984619,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -69.4404
+        },
+        {
+          "symbol": "BP.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T11:25:00+00:00",
+          "entry_trigger": 565.9828622131347,
+          "stop": 564.9174122009277,
+          "target": 568.1137622375486,
+          "status": "closed",
+          "qty": 17.64816883248324,
+          "entry_price": 566.2375545011306,
+          "exit_price": 565.3454555969239,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -74.6959
+        },
+        {
+          "symbol": "BP.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T11:45:00+00:00",
+          "entry_trigger": 566.3830255737305,
+          "stop": 565.0273425598144,
+          "target": 569.0943916015626,
+          "status": "closed",
+          "qty": 17.622517681514033,
+          "entry_price": 566.6378979352387,
+          "exit_price": 564.7730802556625,
+          "exit_reason": "stop_loss",
+          "ambiguous": false,
+          "pnl_gbp": -91.763
+        }
+      ]
+    },
+    {
+      "symbol": "HSBA.L",
+      "trading_days": 15,
+      "bars": 1530,
+      "patterns": {
+        "bearish_engulfing": 91,
+        "hammer": 25,
+        "bullish_engulfing": 90,
+        "shooting_star": 15
+      },
+      "trade_count": 59,
+      "realized_pnl": -4230.52,
+      "wins": 1,
+      "losses": 58,
+      "expired_setups": 32,
+      "sample_trades": [
+        {
+          "symbol": "HSBA.L",
+          "pattern": "hammer",
+          "confirm_ts": "2026-09-28T07:30:00+00:00",
+          "entry_trigger": 1525.7624999999998,
+          "stop": 1520.6393244018554,
+          "target": 1536.0088511962886,
+          "status": "closed",
+          "qty": 6.551151980789382,
+          "entry_price": 1526.449093125,
+          "exit_price": 1527.1125388061523,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -56.1556
+        },
+        {
+          "symbol": "HSBA.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T09:15:00+00:00",
+          "entry_trigger": 1527.9635511474607,
+          "stop": 1522.2385000000002,
+          "target": 1539.413653442382,
+          "status": "closed",
+          "qty": 6.538041421352751,
+          "entry_price": 1528.6511347454773,
+          "exit_price": 1521.5534926750001,
+          "exit_reason": "stop_loss",
+          "ambiguous": false,
+          "pnl_gbp": -105.3507
+        },
+        {
+          "symbol": "HSBA.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T12:15:00+00:00",
+          "entry_trigger": 1531.3652755737303,
+          "stop": 1527.236,
+          "target": 1539.6238267211907,
+          "status": "closed",
+          "qty": 6.5166416002447125,
+          "entry_price": 1532.0543899477386,
+          "exit_price": 1530.4710121643068,
+          "exit_reason": "bearish_shooting_star",
+          "ambiguous": false,
+          "pnl_gbp": -69.2184
+        }
+      ]
+    },
+    {
+      "symbol": "GSK.L",
+      "trading_days": 15,
+      "bars": 1529,
+      "patterns": {
+        "hammer": 28,
+        "bullish_engulfing": 103,
+        "bearish_engulfing": 93,
+        "shooting_star": 25
+      },
+      "trade_count": 62,
+      "realized_pnl": -4250.4,
+      "wins": 0,
+      "losses": 62,
+      "expired_setups": 33,
+      "sample_trades": [
+        {
+          "symbol": "GSK.L",
+          "pattern": "hammer",
+          "confirm_ts": "2026-09-28T07:30:00+00:00",
+          "entry_trigger": 1861.9305,
+          "stop": 1856.5712500000002,
+          "target": 1872.6489999999994,
+          "status": "closed",
+          "qty": 5.368353987481895,
+          "entry_price": 1862.768368725,
+          "exit_price": 1855.7357929375003,
+          "exit_reason": "stop_loss",
+          "ambiguous": false,
+          "pnl_gbp": -96.7364
+        },
+        {
+          "symbol": "GSK.L",
+          "pattern": "hammer",
+          "confirm_ts": "2026-09-28T08:55:00+00:00",
+          "entry_trigger": 1853.42625,
+          "stop": 1849.075,
+          "target": 1862.1287499999999,
+          "status": "closed",
+          "qty": 5.387769132190493,
+          "entry_price": 1854.2602918125,
+          "exit_price": 1848.2429162500002,
+          "exit_reason": "stop_loss",
+          "ambiguous": false,
+          "pnl_gbp": -91.3486
+        },
+        {
+          "symbol": "GSK.L",
+          "pattern": "hammer",
+          "confirm_ts": "2026-09-28T09:10:00+00:00",
+          "entry_trigger": 1847.4232499999998,
+          "stop": 1841.100961669922,
+          "target": 1860.0678266601553,
+          "status": "closed",
+          "qty": 5.40033367594724,
+          "entry_price": 1848.2545904625,
+          "exit_price": 1845.669075,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -72.8454
+        }
+      ]
+    },
+    {
+      "symbol": "AZN.L",
+      "trading_days": 15,
+      "bars": 1529,
+      "patterns": {
+        "bullish_engulfing": 136,
+        "bearish_engulfing": 99,
+        "hammer": 28,
+        "shooting_star": 20
+      },
+      "trade_count": 59,
+      "realized_pnl": -4256.34,
+      "wins": 1,
+      "losses": 58,
+      "expired_setups": 43,
+      "sample_trades": [
+        {
+          "symbol": "AZN.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T07:25:00+00:00",
+          "entry_trigger": 12578.286,
+          "stop": 12543.725,
+          "target": 12647.408,
+          "status": "closed",
+          "qty": 0.7946632811568412,
+          "entry_price": 12583.9462287,
+          "exit_price": 12556.3471,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -80.9221
+        },
+        {
+          "symbol": "AZN.L",
+          "pattern": "hammer",
+          "confirm_ts": "2026-09-28T11:35:00+00:00",
+          "entry_trigger": 12478.235999999999,
+          "stop": 12439.777,
+          "target": 12555.153999999997,
+          "status": "closed",
+          "qty": 0.800386645153321,
+          "entry_price": 12483.851206199999,
+          "exit_price": 12483.050996533204,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -59.5924
+        },
+        {
+          "symbol": "AZN.L",
+          "pattern": "bullish_engulfing",
+          "confirm_ts": "2026-09-28T12:55:00+00:00",
+          "entry_trigger": 12536.265,
+          "stop": 12503.745,
+          "target": 12601.304999999997,
+          "status": "closed",
+          "qty": 0.7962065962581485,
+          "entry_price": 12541.90631925,
+          "exit_price": 12500.371323876954,
+          "exit_reason": "bearish_bearish_engulfing",
+          "ambiguous": false,
+          "pnl_gbp": -91.9727
+        }
+      ]
+    }
+  ]
+}

@@ -58,8 +58,9 @@ Trading 212 / eToro schedules) are documented in [COST_SOURCES.md](COST_SOURCES.
 
 ```bash
 cd candle-lab/backend && . .venv/bin/activate
-python scripts/backtest_20d.py --days 20 --broker trading212 \
+python scripts/backtest_20d.py --days 10 --broker trading212 \
   --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
+# compare windows, e.g. --days 5|10|15|20|30
 python scripts/backtest_20d.py --days 20 --broker etoro_uk_lse
 # also: etoro_flat_usd | legacy_stress
 ```

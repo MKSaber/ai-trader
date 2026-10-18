@@ -508,7 +508,12 @@ def main() -> int:
         }
         for s in report["per_symbol"]
     ]
-    summary_path = out_path.with_name(f"backtest_20d_{args.broker}_summary.json")
+    # Keep summary alongside the report (e.g. backtest_10d_trading212_summary.json)
+    summary_path = out_path.with_name(
+        out_path.name.replace("_report.json", "_summary.json")
+        if out_path.name.endswith("_report.json")
+        else f"{out_path.stem}_summary.json"
+    )
     summary_path.write_text(json.dumps(compact, indent=2, default=str))
 
     print("=" * 72)

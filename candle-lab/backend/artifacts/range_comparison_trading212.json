@@ -1,0 +1,184 @@
+{
+  "broker": "trading212",
+  "symbols": [
+    "VOD.L",
+    "BP.L",
+    "HSBA.L",
+    "GSK.L",
+    "AZN.L"
+  ],
+  "ranges_tested": [
+    {
+      "days": 5,
+      "trades": 80,
+      "wins": 3,
+      "win_rate": 0.0375,
+      "pnl_gbp": -5523.2207,
+      "return_pct": -1.1046,
+      "patterns": {
+        "bullish_engulfing": 160,
+        "hammer": 37,
+        "bearish_engulfing": 136,
+        "shooting_star": 27
+      },
+      "exit_reasons": {
+        "take_profit": 10,
+        "stop_loss": 21,
+        "bearish_bearish_engulfing": 34,
+        "session_flat": 6,
+        "bearish_shooting_star": 9
+      },
+      "per_symbol_pnl": {
+        "VOD.L": -478.94,
+        "BP.L": -879.05,
+        "HSBA.L": -1358.33,
+        "GSK.L": -1540.43,
+        "AZN.L": -1266.47
+      }
+    },
+    {
+      "days": 10,
+      "trades": 160,
+      "wins": 3,
+      "win_rate": 0.01875,
+      "pnl_gbp": -11183.824,
+      "return_pct": -2.2368,
+      "patterns": {
+        "bearish_engulfing": 279,
+        "hammer": 72,
+        "shooting_star": 52,
+        "bullish_engulfing": 312
+      },
+      "exit_reasons": {
+        "bearish_bearish_engulfing": 62,
+        "stop_loss": 48,
+        "take_profit": 22,
+        "bearish_shooting_star": 17,
+        "session_flat": 11
+      },
+      "per_symbol_pnl": {
+        "VOD.L": -1510.67,
+        "BP.L": -2066.55,
+        "HSBA.L": -2522.31,
+        "GSK.L": -2846.11,
+        "AZN.L": -2238.17
+      }
+    },
+    {
+      "days": 15,
+      "trades": 262,
+      "wins": 4,
+      "win_rate": 0.015267175572519083,
+      "pnl_gbp": -18507.3962,
+      "return_pct": -3.7015,
+      "patterns": {
+        "bullish_engulfing": 485,
+        "shooting_star": 95,
+        "bearish_engulfing": 447,
+        "hammer": 119
+      },
+      "exit_reasons": {
+        "bearish_shooting_star": 33,
+        "take_profit": 37,
+        "bearish_bearish_engulfing": 93,
+        "stop_loss": 84,
+        "session_flat": 15
+      },
+      "per_symbol_pnl": {
+        "VOD.L": -2615.64,
+        "BP.L": -3154.49,
+        "HSBA.L": -4230.52,
+        "GSK.L": -4250.4,
+        "AZN.L": -4256.34
+      }
+    },
+    {
+      "days": 20,
+      "trades": 343,
+      "wins": 6,
+      "win_rate": 0.01749271137026239,
+      "pnl_gbp": -23830.4638,
+      "return_pct": -4.7661,
+      "patterns": {
+        "bullish_engulfing": 654,
+        "shooting_star": 133,
+        "bearish_engulfing": 599,
+        "hammer": 160
+      },
+      "exit_reasons": {
+        "stop_loss": 108,
+        "take_profit": 50,
+        "bearish_bearish_engulfing": 125,
+        "bearish_shooting_star": 42,
+        "session_flat": 18
+      },
+      "per_symbol_pnl": {
+        "VOD.L": -3596.99,
+        "BP.L": -4011.53,
+        "HSBA.L": -5692.53,
+        "GSK.L": -5328.31,
+        "AZN.L": -5201.11
+      }
+    },
+    {
+      "days": 30,
+      "trades": 513,
+      "wins": 9,
+      "win_rate": 0.017543859649122806,
+      "pnl_gbp": -34841.0855,
+      "return_pct": -6.9682,
+      "patterns": {
+        "bullish_engulfing": 949,
+        "bearish_engulfing": 899,
+        "hammer": 235,
+        "shooting_star": 202
+      },
+      "exit_reasons": {
+        "take_profit": 70,
+        "bearish_bearish_engulfing": 196,
+        "session_flat": 33,
+        "stop_loss": 152,
+        "bearish_shooting_star": 61,
+        "stop_loss_ambiguous": 1
+      },
+      "per_symbol_pnl": {
+        "VOD.L": -4997.98,
+        "BP.L": -6672.81,
+        "HSBA.L": -7805.32,
+        "GSK.L": -7160.71,
+        "AZN.L": -8204.26
+      }
+    }
+  ],
+  "chosen_days": 10,
+  "chosen_rationale": "User requested 10-day window after multi-range scan. Across 5/10/15/20/30d all were unprofitable under Trading 212 costs; shorter windows lose less in absolute \u00a3 but still negative.",
+  "chosen_result": {
+    "days": 10,
+    "trades": 160,
+    "wins": 3,
+    "win_rate": 0.01875,
+    "pnl_gbp": -11183.824,
+    "return_pct": -2.2368,
+    "patterns": {
+      "bearish_engulfing": 279,
+      "hammer": 72,
+      "shooting_star": 52,
+      "bullish_engulfing": 312
+    },
+    "exit_reasons": {
+      "bearish_bearish_engulfing": 62,
+      "stop_loss": 48,
+      "take_profit": 22,
+      "bearish_shooting_star": 17,
+      "session_flat": 11
+    },
+    "per_symbol_pnl": {
+      "VOD.L": -1510.67,
+      "BP.L": -2066.55,
+      "HSBA.L": -2522.31,
+      "GSK.L": -2846.11,
+      "AZN.L": -2238.17
+    }
+  },
+  "verdict": "no_profit_any_range"
+}
