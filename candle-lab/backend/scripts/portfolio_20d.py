@@ -290,7 +290,7 @@ def main() -> int:
     parser.add_argument("--cash", type=float, default=20_000.0)
     parser.add_argument("--symbols", default=DEFAULT_SYMBOLS)
     parser.add_argument("--broker", default="trading212", choices=sorted(BROKER_PROFILES))
-    parser.add_argument("--rules", default="trade-rules-v2")
+    parser.add_argument("--rules", default="trade-rules-v2.1")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -346,9 +346,9 @@ def main() -> int:
         "playbook": "candle-lab/IG_PLAYBOOK.md",
         **result,
         "disclaimer": (
-            "Shared-cash paper sim on delayed Yahoo 60m bars with trade-rules-v2 "
+            "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules "
             "and Trading 212 / GOV.UK costs. Not live broker execution. "
-            "v2 was originally tuned on a 10d five-name window."
+            "v2.1 profit levers were tuned on the top-10 / 30d book — research only."
         ),
     }
 

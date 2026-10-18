@@ -18,6 +18,14 @@ def test_v2_profile_defaults():
     assert r.trade_hours_london == (10, 11, 12, 13, 14, 15)
 
 
+def test_v21_profit_tuned_defaults():
+    r = load_trade_rules("trade-rules-v2.1")
+    assert r.reward_risk == 5.0
+    assert r.bullish_patterns == ("bullish_engulfing",)
+    assert r.trade_hours_london == (11, 12, 14, 15)
+    assert "hammer" not in r.bullish_set
+
+
 def test_stop_pad_widens_stop():
     entry, stop, target = setup_levels(
         high=110,

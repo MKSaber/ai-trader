@@ -44,6 +44,26 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
         "cost_gate": True,
         "bullish_patterns": ("bullish_engulfing", "hammer"),
     },
+    # Profit lift on top-10 / 30d £20k book: drop hammers (net loser),
+    # skip weak London hours 10 & 13, raise RR to 5.
+    "trade-rules-v2.1": {
+        "label": (
+            "60m profit-tuned: engulfing-only, RR=5, stop pad 1R, downtrend, "
+            "hours 11/12/14/15, 1 trade/day, cost gate"
+        ),
+        "interval": "60m",
+        "reward_risk": 5.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (11, 12, 14, 15),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing",),
+    },
 }
 
 

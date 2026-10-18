@@ -10,9 +10,9 @@ Use a **60-minute** London chart (not 5m).
 All of these must be true on a **closed** 60m candle between **10:00–15:00 London**:
 
 1. **Downtrend context** — prior close is below the close 5 bars earlier.
-2. One of:
-   - **Bullish engulfing** — red candle, then a larger green candle whose body fully engulfs the prior body.
-   - **Hammer** — in that downtrend: lower wick ≥ 2× body, little/no upper wick.
+2. **Bullish engulfing only** (trade-rules-v2.1) — red candle, then a larger green
+   candle whose body fully engulfs the prior body.  
+   *(Hammers are observed but not traded in v2.1 — they lost money on the 30d book.)*
 3. Pattern range `(high − low) / high` ≥ **0.3%**.
 4. You do not already have an open long in that stock today (max **1 new trade / stock / day**).
 
@@ -32,7 +32,7 @@ If price trades through the stop, exit — do **not** also bail just because a b
 
 ```
 risk   = entry − stop
-target = entry + 4 × risk            # reward:risk = 4
+target = entry + 5 × risk            # reward:risk = 5  (v2.1)
 ```
 
 Exit at the target when hit. If neither stop nor target hits by the end of the sample, flat at last close (paper sim).
@@ -43,13 +43,13 @@ Exit at the target when hit. If neither stop nor target hits by the end of the s
 |--------|--------|
 | Stop hit | **Sell** (cut loss) |
 | Take-profit hit | **Sell** (bank) |
-| Bearish engulfing / shooting star while long | **Observe only** — keep stop/target (v2 does not force exit) |
+| Bearish engulfing / shooting star while long | **Observe only** — keep stop/target |
 | No valid buy checklist | **Do nothing** |
 
 ## Cost sanity (UK cash shares, e.g. Trading 212)
 
-Before sizing, planned **4R** should still beat round-trip costs (≈ **0.5% SDRT** on the buy + small spread/slip + PTM £1.50 if consideration &gt; £10k). If not, **skip** the trade.
+Before sizing, planned **5R** should still beat round-trip costs (≈ **0.5% SDRT** on the buy + small spread/slip + PTM £1.50 if consideration &gt; £10k). If not, **skip** the trade.
 
 ## One-line cheat sheet
 
-> On 60m, in a downtrend, 10:00–15:00: hammer or bullish engulfing with ≥0.3% range → buy above high, stop one range below low, take profit at **4R**.
+> On 60m, in a downtrend, **11/12/14/15** London: bullish engulfing (≥0.3% range) → buy above high, stop one range below low, take profit at **5R**. Skip 10:00 and 13:00 bars.

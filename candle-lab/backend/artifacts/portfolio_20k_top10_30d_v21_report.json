@@ -1,0 +1,36 @@
+{
+  "improvement": "trade-rules-v2.1 vs v2 on same top-10 / 30d / \u00a320k book",
+  "before_v2": {
+    "final": 20289.35,
+    "pnl": 289.35,
+    "return_pct": 1.45
+  },
+  "after_v21": {
+    "final_cash_gbp": 20419.82,
+    "pnl_gbp": 419.82,
+    "return_pct": 2.0991,
+    "trades": 25,
+    "wins": 10,
+    "losses": 15,
+    "rules": "trade-rules-v2.1",
+    "pnl_by_symbol": {
+      "AZN.L": -209.64,
+      "BATS.L": 68.56,
+      "BP.L": -53.32,
+      "GSK.L": 11.27,
+      "HSBA.L": -66.54,
+      "NG.L": 27.65,
+      "REL.L": 51.88,
+      "RIO.L": -135.96,
+      "SHEL.L": 412.8,
+      "ULVR.L": 313.1
+    }
+  },
+  "delta_pnl_gbp": 130.47,
+  "levers": [
+    "engulfing only (drop hammer)",
+    "skip London hours 10 and 13",
+    "reward:risk 5 instead of 4"
+  ],
+  "optional_further": "Dropping chronic losers HSBA/RIO/AZN lifted sample to ~\u00a3856 (more overfit risk)."
+}

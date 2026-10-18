@@ -1,0 +1,143 @@
+{
+  "ranked": [
+    {
+      "name": "drop_losers_v2",
+      "pnl": 856.29,
+      "final": 20856.29,
+      "trades": 23,
+      "wins": 10
+    },
+    {
+      "name": "winners5",
+      "pnl": 820.79,
+      "final": 20820.79,
+      "trades": 8,
+      "wins": 5
+    },
+    {
+      "name": "drop_hsba_rio_azn",
+      "pnl": 587.16,
+      "final": 20587.16,
+      "trades": 13,
+      "wins": 7
+    },
+    {
+      "name": "engulf+hrs+rr5",
+      "pnl": 419.82,
+      "final": 20419.82,
+      "trades": 25,
+      "wins": 10
+    },
+    {
+      "name": "engulf+hrs+rr5+risk015",
+      "pnl": 412.42,
+      "final": 20412.42,
+      "trades": 25,
+      "wins": 10
+    },
+    {
+      "name": "engulf+hrs+rr5+max35",
+      "pnl": 409.69,
+      "final": 20409.69,
+      "trades": 25,
+      "wins": 10
+    },
+    {
+      "name": "skip_bad_hours",
+      "pnl": 379.54,
+      "final": 20379.54,
+      "trades": 27,
+      "wins": 12
+    },
+    {
+      "name": "engulf+skip_hours",
+      "pnl": 370.65,
+      "final": 20370.65,
+      "trades": 26,
+      "wins": 11
+    },
+    {
+      "name": "engulf_only",
+      "pnl": 329.6,
+      "final": 20329.6,
+      "trades": 37,
+      "wins": 13
+    },
+    {
+      "name": "engulf+hrs11_14_15",
+      "pnl": 329.08,
+      "final": 20329.08,
+      "trades": 23,
+      "wins": 9
+    },
+    {
+      "name": "v2_baseline",
+      "pnl": 289.35,
+      "final": 20289.35,
+      "trades": 40,
+      "wins": 14
+    },
+    {
+      "name": "engulf+hrs+rr5+pad1.5+stop005",
+      "pnl": 277.73,
+      "final": 20277.73,
+      "trades": 22,
+      "wins": 9
+    },
+    {
+      "name": "engulf+hrs+rr6+pad1.5",
+      "pnl": 238.88,
+      "final": 20238.88,
+      "trades": 24,
+      "wins": 9
+    },
+    {
+      "name": "engulf+hrs+rr5+pad1.5",
+      "pnl": 215.72,
+      "final": 20215.72,
+      "trades": 24,
+      "wins": 9
+    },
+    {
+      "name": "combo2",
+      "pnl": 214.72,
+      "final": 20214.72,
+      "trades": 20,
+      "wins": 8
+    },
+    {
+      "name": "combo_best_guess",
+      "pnl": 184.91,
+      "final": 20184.91,
+      "trades": 22,
+      "wins": 9
+    },
+    {
+      "name": "combo3",
+      "pnl": 127.95,
+      "final": 20127.95,
+      "trades": 24,
+      "wins": 9
+    }
+  ],
+  "pick": "engulf+hrs+rr5",
+  "pick_detail": {
+    "final_cash_gbp": 20419.82,
+    "realized_pnl_gbp": 419.82,
+    "trade_count": 25,
+    "wins": 10,
+    "losses": 15,
+    "pnl_by_symbol": {
+      "AZN.L": -209.64,
+      "BATS.L": 68.56,
+      "BP.L": -53.32,
+      "GSK.L": 11.27,
+      "HSBA.L": -66.54,
+      "NG.L": 27.65,
+      "REL.L": 51.88,
+      "RIO.L": -135.96,
+      "SHEL.L": 412.8,
+      "ULVR.L": 313.1
+    }
+  }
+}
