@@ -28,6 +28,7 @@ from app.services.intraday.engine import (
     portfolio_metrics,
     simulate_setup,
 )
+from app.services.findings.service import upsert_finding
 from app.services.research import issue_predictions, resolve_predictions, train_and_register
 import pandas as pd
 
@@ -459,22 +460,35 @@ def stage_analyse_errors(ctx: PipelineContext) -> None:
         select(m.Prediction).where(m.Prediction.resolved_at.is_not(None))
     ).all()
     if not preds:
-        ctx.findings.append(
-            {
-                "claim": "No resolved predictions yet to analyse forecast errors",
-                "status": FindingStatus.EXPLORATORY,
-            }
+        claim = "No resolved predictions yet to analyse forecast errors"
+        upsert_finding(
+            ctx.db,
+            claim=claim,
+            topic="daily_pipeline",
+            data_cutoff=ctx.session_date,
+            status=FindingStatus.EXPLORATORY,
         )
+        ctx.findings.append({"claim": claim, "status": FindingStatus.EXPLORATORY})
         return
     correct = sum(1 for p in preds if p.outcome_correct)
     n = len(preds)
+    claim = (
+        f"Among {n} resolved forecasts, {correct} matched direction "
+        f"({correct / n:.1%}). Directional accuracy is not net profitability "
+        "after costs."
+    )
+    upsert_finding(
+        ctx.db,
+        claim=claim,
+        topic="daily_pipeline",
+        sample_size=n,
+        effect_size=correct / n,
+        data_cutoff=ctx.session_date,
+        status=FindingStatus.EXPLORATORY,
+    )
     ctx.findings.append(
         {
-            "claim": (
-                f"Among {n} resolved forecasts, {correct} matched direction "
-                f"({correct / n:.1%}). Directional accuracy is not net profitability "
-                "after costs."
-            ),
+            "claim": claim,
             "status": FindingStatus.EXPLORATORY,
             "sample_size": n,
             "effect_size": correct / n,
@@ -547,39 +561,29 @@ def stage_evaluate_challengers(ctx: PipelineContext) -> None:
 
 
 def stage_save_findings(ctx: PipelineContext) -> None:
-    """Persist research findings with evidence metadata."""
-    today = date.today()
+    """Persist research findings with evidence metadata (deduped)."""
     for f in ctx.findings:
-        ctx.db.add(
-            m.ResearchFinding(
-                claim=f["claim"],
-                universe="LSE sample",
-                horizon=get_settings().default_horizon,
-                discovery_date=today,
-                data_cutoff=ctx.session_date or today,
-                sample_size=f.get("sample_size"),
-                effect_size=f.get("effect_size"),
-                status=f.get("status", FindingStatus.EXPLORATORY),
-                topic="daily_pipeline",
-                search_vector=f["claim"],
-            )
-        )
-    # Always record a plain status finding about model changes
-    promo = ctx.metrics.get("promotion", {})
-    ctx.db.add(
-        m.ResearchFinding(
-            claim=(
-                f"Promotion recommendation: {promo.get('recommendation', 'n/a')}. "
-                "No automatic promotion."
-            ),
-            universe="LSE sample",
+        upsert_finding(
+            ctx.db,
+            claim=f["claim"],
+            topic="daily_pipeline",
             horizon=get_settings().default_horizon,
-            discovery_date=today,
-            data_cutoff=ctx.session_date or today,
-            status=FindingStatus.EXPLORATORY,
-            topic="promotion",
-            search_vector="promotion challenger champion",
+            sample_size=f.get("sample_size"),
+            effect_size=f.get("effect_size"),
+            data_cutoff=ctx.session_date,
+            status=f.get("status", FindingStatus.EXPLORATORY),
         )
+    promo = ctx.metrics.get("promotion", {})
+    upsert_finding(
+        ctx.db,
+        claim=(
+            f"Promotion recommendation: {promo.get('recommendation', 'n/a')}. "
+            "No automatic promotion."
+        ),
+        topic="promotion",
+        horizon=get_settings().default_horizon,
+        data_cutoff=ctx.session_date,
+        status=FindingStatus.EXPLORATORY,
     )
     ctx.db.commit()
 

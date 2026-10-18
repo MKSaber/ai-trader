@@ -9,6 +9,9 @@ import { FindingsPage } from "./pages/FindingsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StocksPage } from "./pages/StocksPage";
 import { HomePage } from "./pages/HomePage";
+import { PatternsPage } from "./pages/PatternsPage";
+import { BacktestsPage } from "./pages/BacktestsPage";
+import { DriftPage } from "./pages/DriftPage";
 
 const links = [
   ["/", "Overview"],
@@ -16,9 +19,12 @@ const links = [
   ["/coverage", "Coverage"],
   ["/stocks", "Stocks"],
   ["/forecasts", "Forecasts"],
+  ["/patterns", "Patterns"],
   ["/models", "Models"],
+  ["/backtests", "Backtests"],
   ["/intraday", "Intraday"],
   ["/findings", "Findings"],
+  ["/drift", "Drift"],
   ["/pipeline", "Pipeline"],
   ["/settings", "Settings"],
 ] as const;
@@ -65,9 +71,12 @@ export function App() {
           <Route path="/coverage" element={<CoveragePage />} />
           <Route path="/stocks" element={<StocksPage />} />
           <Route path="/forecasts" element={<ForecastsPage />} />
+          <Route path="/patterns" element={<PatternsPage />} />
           <Route path="/models" element={<ModelsPage />} />
+          <Route path="/backtests" element={<BacktestsPage />} />
           <Route path="/intraday" element={<IntradayLabPage />} />
           <Route path="/findings" element={<FindingsPage />} />
+          <Route path="/drift" element={<DriftPage />} />
           <Route path="/pipeline" element={<PipelinePage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>

@@ -124,6 +124,20 @@ export function ModelsPage() {
                       >
                         Reject
                       </button>
+                      {(m.status === "retired" || m.status === "candidate") && (
+                        <button
+                          className="secondary"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            await apiPost("/models/rollback", {
+                              model_id: m.id,
+                            });
+                            load();
+                          }}
+                        >
+                          Rollback to this
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { apiGet, apiUpload } from "../api/client";
 
+const API_BASE = import.meta.env.VITE_API_BASE || "/api";
+
 type UploadRow = {
   id: number;
   filename: string;
@@ -25,13 +27,31 @@ export function UploadPage() {
     refresh();
   }, []);
 
+  async function preview(file: File) {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await fetch(`${API_BASE}/uploads/preview`, {
+      method: "POST",
+      body: form,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
   async function handleFiles(files: FileList | null) {
     const file = files?.[0];
     if (!file) return;
-    setStatus("Uploading…");
+    setStatus("Previewing…");
     try {
+      if (
+        sourceType === "market_ohlcv" &&
+        /\.(csv|xlsx|xls)$/i.test(file.name)
+      ) {
+        const map = await preview(file);
+        setStatus(`Mapping preview:\n${JSON.stringify(map, null, 2)}\n\nImporting…`);
+      }
       const res = await apiUpload(file, sourceType);
-      setStatus(JSON.stringify(res, null, 2));
+      setStatus((prev) => `${prev}\n\nImport:\n${JSON.stringify(res, null, 2)}`);
       refresh();
     } catch (e) {
       setStatus(String(e));

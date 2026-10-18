@@ -63,9 +63,18 @@ def start_batch(
 
 
 def persist_daily_bars(
-    db: Session, bars: list[BarRow], batch: m.IngestionBatch
+    db: Session,
+    bars: list[BarRow],
+    batch: m.IngestionBatch,
+    *,
+    allow_revision: bool = False,
 ) -> int:
-    """Insert daily bars idempotently (skip existing current revision)."""
+    """Insert daily bars idempotently.
+
+    Identical current rows are skipped. When allow_revision=True and values
+    differ, the prior current row is retired and a new revision is inserted
+    (predictions are never rewritten).
+    """
     n = 0
     for bar in bars:
         inst = get_or_create_instrument(db, bar.symbol, bar.currency_hint)
@@ -76,9 +85,23 @@ def persist_daily_bars(
                 m.MarketBarDaily.is_current.is_(True),
             )
         )
-        if existing:
-            continue
         cur = bar.currency_hint or inst.currency_quoted
+        open_gbp = to_gbp(bar.open, cur)
+        high_gbp = to_gbp(bar.high, cur)
+        low_gbp = to_gbp(bar.low, cur)
+        close_gbp = to_gbp(bar.close, cur)
+        revision = 1
+        if existing:
+            same = (
+                abs(existing.close_raw - bar.close) < 1e-9
+                and abs(existing.open_raw - bar.open) < 1e-9
+                and abs(existing.volume - bar.volume) < 1e-9
+            )
+            if same or not allow_revision:
+                continue
+            existing.is_current = False
+            revision = int(existing.revision) + 1
+            batch.revises_batch_id = existing.source_batch_id
         db.add(
             m.MarketBarDaily(
                 instrument_id=inst.id,
@@ -88,12 +111,12 @@ def persist_daily_bars(
                 low_raw=bar.low,
                 close_raw=bar.close,
                 volume=bar.volume,
-                open_gbp=to_gbp(bar.open, cur),
-                high_gbp=to_gbp(bar.high, cur),
-                low_gbp=to_gbp(bar.low, cur),
-                close_gbp=to_gbp(bar.close, cur),
+                open_gbp=open_gbp,
+                high_gbp=high_gbp,
+                low_gbp=low_gbp,
+                close_gbp=close_gbp,
                 source_batch_id=batch.id,
-                revision=1,
+                revision=revision,
                 is_current=True,
             )
         )
@@ -168,7 +191,7 @@ def _touch_watermark(
             and obj.bar_kind == bar_kind
             and obj.interval_minutes == interval_minutes
         ):
-            if bar_ts > obj.last_bar_ts:
+            if _ts_key(bar_ts) > _ts_key(obj.last_bar_ts):
                 obj.last_bar_ts = bar_ts
             return
 
@@ -188,9 +211,16 @@ def _touch_watermark(
                 last_bar_ts=bar_ts,
             )
         )
-    elif bar_ts > wm.last_bar_ts:
+    elif _ts_key(bar_ts) > _ts_key(wm.last_bar_ts):
         wm.last_bar_ts = bar_ts
         wm.updated_at = datetime.now(timezone.utc)
+
+
+def _ts_key(ts: datetime) -> datetime:
+    """Normalize datetimes for comparison (SQLite may drop tzinfo)."""
+    if ts.tzinfo is None:
+        return ts.replace(tzinfo=timezone.utc)
+    return ts
 
 
 def complete_batch(db: Session, batch: m.IngestionBatch, status: str = "success") -> None:

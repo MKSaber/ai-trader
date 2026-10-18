@@ -7,7 +7,6 @@ from typing import Any
 
 from sqlalchemy import (
     JSON,
-    BigInteger,
     Boolean,
     Date,
     DateTime,
@@ -139,7 +138,7 @@ class MarketBarDaily(Base):
         Index("ix_daily_inst_date", "instrument_id", "session_date"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     session_date: Mapped[date] = mapped_column(Date)
     open_raw: Mapped[float] = mapped_column(Float)
@@ -173,7 +172,7 @@ class MarketBarIntraday(Base):
         Index("ix_intraday_inst_ts", "instrument_id", "bar_ts"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     bar_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     session_date: Mapped[date] = mapped_column(Date, index=True)
@@ -324,7 +323,7 @@ class Prediction(Base):
         Index("ix_pred_inst_issued", "instrument_id", "issued_at"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     model_id: Mapped[int] = mapped_column(ForeignKey("models.id"))
     issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -363,7 +362,7 @@ class IntradaySetup(Base):
 
     __tablename__ = "intraday_setups"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     model_id: Mapped[int | None] = mapped_column(ForeignKey("models.id"))
     signal_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -396,7 +395,7 @@ class PaperOrder(Base):
         UniqueConstraint("setup_id", "order_kind", name="uq_paper_order"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     setup_id: Mapped[int] = mapped_column(ForeignKey("intraday_setups.id"))
     order_kind: Mapped[str] = mapped_column(String(32))
     limit_price: Mapped[float | None] = mapped_column(Float)
@@ -411,7 +410,7 @@ class PaperFill(Base):
 
     __tablename__ = "paper_fills"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("paper_orders.id"))
     fill_ts: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     price: Mapped[float] = mapped_column(Float)
@@ -425,7 +424,7 @@ class PaperPosition(Base):
 
     __tablename__ = "paper_positions"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     setup_id: Mapped[int] = mapped_column(ForeignKey("intraday_setups.id"))
     instrument_id: Mapped[int] = mapped_column(ForeignKey("instruments.id"))
     quantity: Mapped[float] = mapped_column(Float)
