@@ -221,17 +221,34 @@ def simulate_portfolio(
                 bc = float(det.conditions.get("body_cur") or 0.0)
                 if bp <= 0 or bc / bp < min_ratio:
                     continue
-            stop_pct = (high - low) / high if high else 0.0
+            # patterns-v2: volume confirmation
+            min_vol = getattr(rules, "min_volume_ratio", 0.0) or 0.0
+            if min_vol > 0:
+                vr = det.conditions.get("volume_ratio")
+                if vr is None or float(vr) < min_vol:
+                    continue
+            # patterns-v2: close in upper half of pattern range
+            if getattr(rules, "require_close_in_upper_half", False):
+                ph = float(det.conditions.get("pattern_high") or high)
+                pl = float(det.conditions.get("pattern_low") or low)
+                pc = float(det.conditions.get("pattern_close") or close)
+                if ph <= pl or pc < (ph + pl) / 2.0:
+                    continue
+            # Use full pattern range for multi-bar reversals when present
+            lvl_high = float(det.conditions.get("pattern_high") or high)
+            lvl_low = float(det.conditions.get("pattern_low") or low)
+            stop_pct = (lvl_high - lvl_low) / lvl_high if lvl_high else 0.0
             if stop_pct < rules.min_stop_pct:
                 continue
             entry, stop, target = setup_levels(
-                high,
-                low,
+                lvl_high,
+                lvl_low,
                 entry_buffer_frac=settings.entry_buffer_frac,
                 stop_buffer_frac=settings.stop_buffer_frac,
                 reward_risk=rules.reward_risk,
                 stop_pad_ranges=rules.stop_pad_ranges,
             )
+            need_next = bool(getattr(rules, "require_next_open_confirm", False))
             setup = OpenSetup(
                 symbol=sym,
                 pattern=det.pattern,
@@ -241,6 +258,8 @@ def simulate_portfolio(
                 stop=stop,
                 target=target,
                 expiry_i=i + rules.setup_expiry_bars,
+                pattern_close=float(det.conditions.get("pattern_close") or close),
+                awaiting_next_open=need_next,
             )
             open_by_sym[sym] = setup
 
@@ -249,6 +268,19 @@ def simulate_portfolio(
         if setup and setup.status == "pending":
             if i <= setup.confirm_i:
                 continue
+            # Next-bar open must clear pattern close (patterns-v2 confirm)
+            if setup.awaiting_next_open:
+                if i == setup.confirm_i + 1:
+                    if open_px < setup.pattern_close:
+                        setup.status = "expired"
+                        del open_by_sym[sym]
+                        continue
+                    setup.awaiting_next_open = False
+                else:
+                    # Missed the immediate next bar — drop the setup
+                    setup.status = "expired"
+                    del open_by_sym[sym]
+                    continue
             if i > setup.expiry_i:
                 setup.status = "expired"
                 del open_by_sym[sym]

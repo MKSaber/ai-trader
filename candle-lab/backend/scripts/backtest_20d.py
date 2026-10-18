@@ -65,6 +65,9 @@ class OpenSetup:
     exit_reason: str = ""
     ambiguous: bool = False
     pnl_gbp: float = 0.0
+    # patterns-v2 next-open confirmation
+    pattern_close: float = 0.0
+    awaiting_next_open: bool = False
 
 
 @dataclass

@@ -102,5 +102,52 @@ Minimum history: `2` closed bars (+ warm-up for charts).
 
 ## Detector versioning
 
-Config blob `detector_version: patterns-v1` is stored immutably on every signal.
-Rule changes require `patterns-v2` and a new experiment id.
+Config blob `detector_version` is stored immutably on every signal.
+`patterns-v2` adds adaptive body thresholds, new bullish reversals, and optional
+volume / next-open confirmations consumed by trade-rule knobs.
+
+## patterns-v2 additions
+
+Shared helpers:
+
+- `avg_body` = mean `|C-O|` over the prior 10 bars (excludes the current bar).
+- A body is **long** when `body >= avg_body`, **short** when `body <= avg_body`.
+- `volume_ratio` = confirm-bar volume / mean volume of the prior 10 bars
+  (omitted when volume is missing or zero).
+- Each detection records `pattern_high`, `pattern_low`, `pattern_close` for
+  stop/entry geometry and next-open confirmation.
+
+### Piercing line (2-bar, bullish)
+
+1. Prior bearish long body.
+2. Current bullish; opens below prior close.
+3. Closes above prior midpoint `(O[i-1]+C[i-1])/2` but **below** prior open
+   (otherwise it is a bullish engulfing).
+
+### Bullish harami (2-bar)
+
+1. Prior bearish long body.
+2. Current body short and nested inside the prior body
+   (`max(O,C)[i] < O[i-1]` and `min(O,C)[i] > C[i-1]`).
+
+### Morning star (3-bar)
+
+1. Bar `i-2`: bearish long body.
+2. Bar `i-1`: small body (star) opening near/below the first close.
+3. Bar `i`: bullish close above the midpoint of bar `i-2`.
+
+### Three outside up (3-bar)
+
+1. Bars `i-2`/`i-1` form a bullish engulfing.
+2. Bar `i` is bullish and closes above the engulfing close.
+
+### Optional trade-rule confirmations
+
+| Knob | Effect |
+|------|--------|
+| `min_volume_ratio` | Skip if confirm `volume_ratio` &lt; threshold (e.g. 1.2) |
+| `require_next_open_confirm` | Expire pending setup if next bar opens below `pattern_close` |
+| `require_close_in_upper_half` | Skip if `pattern_close` is below mid of pattern range |
+
+Legacy engulfing / hammer / shooting star keep their v1 geometry; they also
+emit `volume_ratio` and pattern range fields under v2.

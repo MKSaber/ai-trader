@@ -64,6 +64,10 @@ def test_v25_fullday_golden_defaults():
     assert r.max_position_frac == 0.35
     assert r.large_book_cash_gbp is None
     assert r.sizing_for_cash(20_000) == r.sizing_for_cash(100_000)
+    # patterns-v2 confirms stay off for frozen v2.5
+    assert r.min_volume_ratio == 0.0
+    assert r.require_next_open_confirm is False
+    assert r.require_close_in_upper_half is False
     assert "III.L" in r.blocklist_set
     for sym in (
         "HSBA.L",

@@ -6,6 +6,8 @@ trade-rules-v2.2: stay green on top-10 / 60d (hour-15 filter + cooloff/sizing).
 trade-rules-v2.3: transitional cash-aware broad-book fix (superseded by v2.4).
 trade-rules-v2.4: hour-15 golden (superseded for full-day trading by v2.5).
 trade-rules-v2.5: full-session golden — quality filters, not hour slicing.
+trade-rules-v2.6: patterns-v2 candidates (new reversals ± volume / next-open
+                  confirm) — only locked after dual-green A/B; see ab_patterns_v2.
 """
 
 from __future__ import annotations
@@ -309,6 +311,10 @@ class TradeRules:
     # Quality filters (full-day approach — replace hour slicing)
     min_engulf_body_ratio: float = 1.0  # body_cur / body_prev
     min_downtrend_pct: float = 0.0  # prior close drop over trend lookback
+    # patterns-v2 confirmations (defaults off → v2.5 behaviour unchanged)
+    min_volume_ratio: float = 0.0  # confirm-bar vol / prior 10-bar avg; 0=off
+    require_next_open_confirm: bool = False  # next open >= pattern close
+    require_close_in_upper_half: bool = False  # pattern close above mid-range
 
     @property
     def bullish_set(self) -> set[str]:
@@ -389,6 +395,11 @@ def load_trade_rules(version: str = "trade-rules-v2.5") -> TradeRules:
         large_book_max_stops_per_symbol=raw.get("large_book_max_stops_per_symbol"),
         min_engulf_body_ratio=float(raw.get("min_engulf_body_ratio", 1.0)),
         min_downtrend_pct=float(raw.get("min_downtrend_pct", 0.0)),
+        min_volume_ratio=float(raw.get("min_volume_ratio", 0.0)),
+        require_next_open_confirm=bool(raw.get("require_next_open_confirm", False)),
+        require_close_in_upper_half=bool(
+            raw.get("require_close_in_upper_half", False)
+        ),
     )
 
 
