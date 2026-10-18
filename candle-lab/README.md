@@ -61,8 +61,8 @@ cd candle-lab/backend && . .venv/bin/activate
 # Default trade-rules-v2 (60m, cost-aware) — see TRADE_RULES.md + IG_PLAYBOOK.md
 python scripts/backtest_20d.py --days 10 --rules trade-rules-v2 --broker trading212 \
   --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
-# Shared £20k portfolio, 15 LSE names, 20 days:
-python scripts/portfolio_20d.py --days 20 --cash 20000 --broker trading212
+# Shared £20k portfolio, top-10 LSE megacaps, 30 days:
+python scripts/portfolio_20d.py --days 30 --cash 20000 --broker trading212
 # Legacy 5m rules for comparison:
 python scripts/backtest_20d.py --days 10 --rules trade-rules-v1 --broker trading212
 ```

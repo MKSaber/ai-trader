@@ -46,11 +46,12 @@ from scripts.backtest_20d import (
     filter_last_n_trading_days,
 )
 
-# Broader liquid FTSE / top LSE set (Yahoo .L tickers)
+# Top LSE / FTSE megacaps (Yahoo .L). Weak day-trade names from the
+# 15-name scan (BARC, LLOY, RR, GLEN, VOD) dropped; RR/GLEN replaced by
+# next large liquid names NG + REL despite RR/GLEN ranking in raw mcap top 10.
 DEFAULT_SYMBOLS = (
-    "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L,"
-    "SHEL.L,ULVR.L,LLOY.L,BARC.L,RIO.L,"
-    "BATS.L,DGE.L,NG.L,RR.L,GLEN.L"
+    "HSBA.L,AZN.L,SHEL.L,RIO.L,BATS.L,"
+    "ULVR.L,BP.L,GSK.L,NG.L,REL.L"
 )
 
 
