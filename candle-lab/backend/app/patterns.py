@@ -35,7 +35,8 @@ def _valid_range(row: pd.Series) -> bool:
     return float(row["high"]) > float(row["low"]) + eps
 
 
-def _downtrend(df: pd.DataFrame, i: int) -> bool:
+def in_downtrend(df: pd.DataFrame, i: int) -> bool:
+    """True if close of bar i-1 is below close of bar i-1-TREND_LOOKBACK."""
     j = i - 1
     k = j - TREND_LOOKBACK
     if k < 0:
@@ -43,12 +44,21 @@ def _downtrend(df: pd.DataFrame, i: int) -> bool:
     return float(df.iloc[j]["close"]) < float(df.iloc[k]["close"])
 
 
-def _uptrend(df: pd.DataFrame, i: int) -> bool:
+def in_uptrend(df: pd.DataFrame, i: int) -> bool:
+    """True if close of bar i-1 is above close of bar i-1-TREND_LOOKBACK."""
     j = i - 1
     k = j - TREND_LOOKBACK
     if k < 0:
         return False
     return float(df.iloc[j]["close"]) > float(df.iloc[k]["close"])
+
+
+def _downtrend(df: pd.DataFrame, i: int) -> bool:
+    return in_downtrend(df, i)
+
+
+def _uptrend(df: pd.DataFrame, i: int) -> bool:
+    return in_uptrend(df, i)
 
 
 def detect_closed_patterns(df: pd.DataFrame) -> list[Detection]:

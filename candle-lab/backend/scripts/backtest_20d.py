@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""20-day historical paper backtest for candle pattern detector.
+"""Historical paper backtest for candle pattern detector.
 
-Fetches delayed Yahoo 5m bars for top LSE symbols, detects patterns-v1
-signals, and simulates long-only buy/sell vs trade-rules-v1 insights.
+Fetches delayed Yahoo bars for top LSE symbols, detects patterns-v1
+signals, and simulates long-only trades under a named trade-rules profile.
 
 Usage (from candle-lab/backend with venv active):
-  python scripts/backtest_20d.py
-  python scripts/backtest_20d.py --days 20 --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
+  python scripts/backtest_20d.py --days 10 --rules trade-rules-v2 --broker trading212
 """
 
 from __future__ import annotations
@@ -35,10 +34,16 @@ from app.paper import (
     simulate_long_bar,
     size_shares,
 )
-from app.patterns import DETECTOR_VERSION, detect_closed_patterns
+from app.patterns import DETECTOR_VERSION, detect_closed_patterns, in_downtrend
+from app.trade_rules import (
+    TRADE_RULE_PROFILES,
+    TradeRules,
+    expected_net_at_target,
+    load_trade_rules,
+    setup_levels,
+)
 
 LONDON = ZoneInfo("Europe/London")
-BULLISH_TRADE_PATTERNS = {"bullish_engulfing", "hammer"}
 
 
 @dataclass
@@ -83,13 +88,13 @@ def _session():
     return curl_requests.Session(impersonate="chrome")
 
 
-def fetch_5m(symbol: str, period: str = "60d") -> pd.DataFrame:
-    """Fetch up to ~60d of 5m Yahoo bars (delayed/unofficial)."""
-    print(f"  fetching {symbol} ...", flush=True)
+def fetch_bars(symbol: str, interval: str = "5m", period: str = "60d") -> pd.DataFrame:
+    """Fetch Yahoo OHLCV bars (delayed/unofficial)."""
+    print(f"  fetching {symbol} ({interval}) ...", flush=True)
     ticker = yf.Ticker(symbol, session=_session())
     frame = ticker.history(
         period=period,
-        interval="5m",
+        interval=interval,
         auto_adjust=False,
         prepost=False,
         actions=False,
@@ -114,6 +119,11 @@ def fetch_5m(symbol: str, period: str = "60d") -> pd.DataFrame:
     df["closed"] = True
     print(f"  {symbol}: {len(df)} bars", flush=True)
     return df.reset_index(drop=True)
+
+
+# Back-compat alias used by hillclimb helpers
+def fetch_5m(symbol: str, period: str = "60d") -> pd.DataFrame:
+    return fetch_bars(symbol, interval="5m", period=period)
 
 
 def filter_last_n_trading_days(df: pd.DataFrame, days: int) -> pd.DataFrame:
@@ -156,11 +166,30 @@ def _close_long(
     return setup, cash, pnl
 
 
+def _trade_dict(s: OpenSetup) -> dict:
+    return {
+        "symbol": s.symbol,
+        "pattern": s.pattern,
+        "confirm_ts": s.confirm_ts.isoformat(),
+        "entry_trigger": s.entry_trigger,
+        "stop": s.stop,
+        "target": s.target,
+        "status": s.status,
+        "qty": s.qty,
+        "entry_price": s.entry_price,
+        "exit_price": s.exit_price,
+        "exit_reason": s.exit_reason,
+        "ambiguous": s.ambiguous,
+        "pnl_gbp": round(s.pnl_gbp, 4),
+    }
+
+
 def simulate_symbol(
     symbol: str,
     df: pd.DataFrame,
     settings: Settings,
     cash: float,
+    rules: TradeRules,
 ) -> tuple[SimResult, float]:
     """Detect once, then chronologically replay entries/exits (no look-ahead fills)."""
     print(f"  detecting patterns on {symbol} ({len(df)} bars) ...", flush=True)
@@ -179,21 +208,29 @@ def simulate_symbol(
     realized = 0.0
     wins = 0
     losses = 0
+    day_trade_counts: dict = {}
     local_dates = df["bar_start"].dt.tz_convert(LONDON).dt.date.unique()
+    bullish = rules.bullish_set
 
     for i in range(len(df)):
         row = df.iloc[i]
         bar_start = pd.Timestamp(row["bar_start"]).to_pydatetime()
         if bar_start.tzinfo is None:
             bar_start = bar_start.replace(tzinfo=timezone.utc)
+        local = bar_start.astimezone(LONDON)
+        day = local.date()
         high = float(row["high"])
         low = float(row["low"])
         close = float(row["close"])
         open_px = float(row["open"])
 
-        # Insights confirmed on this closed bar
         for det in by_confirm.get(i, []):
-            if det.direction == "down" and open_setup and open_setup.status == "open":
+            if (
+                rules.exit_on_bearish
+                and det.direction == "down"
+                and open_setup
+                and open_setup.status == "open"
+            ):
                 open_setup, cash, pnl = _close_long(
                     open_setup,
                     close,
@@ -211,13 +248,32 @@ def simulate_symbol(
 
             if (
                 det.direction == "up"
-                and det.pattern in BULLISH_TRADE_PATTERNS
+                and det.pattern in bullish
                 and open_setup is None
             ):
-                entry = high * (1.0 + settings.entry_buffer_frac)
-                stop = low * (1.0 - settings.stop_buffer_frac)
-                risk = max(entry - stop, entry * 1e-4)
-                target = entry + settings.reward_risk * risk
+                if (
+                    rules.trade_hours_london is not None
+                    and local.hour not in rules.trade_hours_london
+                ):
+                    continue
+                if (
+                    rules.max_trades_per_day is not None
+                    and day_trade_counts.get(day, 0) >= rules.max_trades_per_day
+                ):
+                    continue
+                if rules.require_downtrend and not in_downtrend(df, i):
+                    continue
+                stop_pct = (high - low) / high if high else 0.0
+                if stop_pct < rules.min_stop_pct:
+                    continue
+                entry, stop, target = setup_levels(
+                    high,
+                    low,
+                    entry_buffer_frac=settings.entry_buffer_frac,
+                    stop_buffer_frac=settings.stop_buffer_frac,
+                    reward_risk=rules.reward_risk,
+                    stop_pad_ranges=rules.stop_pad_ranges,
+                )
                 open_setup = OpenSetup(
                     symbol=symbol,
                     pattern=det.pattern,
@@ -226,7 +282,7 @@ def simulate_symbol(
                     entry_trigger=entry,
                     stop=stop,
                     target=target,
-                    expiry_i=i + settings.setup_expiry_bars,
+                    expiry_i=i + rules.setup_expiry_bars,
                 )
 
         if open_setup is None:
@@ -250,15 +306,31 @@ def simulate_symbol(
                     open_setup = None
                     continue
                 notional = qty * fill_px
-                costs = entry_costs(notional, settings)
-                cash -= notional + costs.total
+                ec = entry_costs(notional, settings)
+                xc = exit_costs(qty * open_setup.target, settings)
+                if rules.cost_gate:
+                    net = expected_net_at_target(
+                        qty,
+                        fill_px,
+                        open_setup.stop,
+                        open_setup.target,
+                        rules.reward_risk,
+                        ec.total,
+                        xc.total,
+                    )
+                    if net <= 0:
+                        open_setup.status = "expired"
+                        expired += 1
+                        open_setup = None
+                        continue
+                cash -= notional + ec.total
                 open_setup.status = "open"
                 open_setup.qty = qty
                 open_setup.entry_price = fill_px
                 open_setup.entry_i = i
+                day_trade_counts[day] = day_trade_counts.get(day, 0) + 1
 
         elif open_setup.status == "open":
-            # Don't exit on the same bar as entry
             if open_setup.entry_i is not None and i == open_setup.entry_i:
                 continue
             sim = simulate_long_bar(
@@ -269,7 +341,7 @@ def simulate_symbol(
                 low,
                 close,
             )
-            force = _force_session_flat(bar_start)
+            force = rules.session_flat and _force_session_flat(bar_start)
             if sim is None and not force:
                 continue
             if sim is None:
@@ -321,34 +393,27 @@ def simulate_symbol(
     return result, cash
 
 
-def _trade_dict(s: OpenSetup) -> dict:
-    return {
-        "symbol": s.symbol,
-        "pattern": s.pattern,
-        "confirm_ts": s.confirm_ts.isoformat(),
-        "entry_trigger": s.entry_trigger,
-        "stop": s.stop,
-        "target": s.target,
-        "status": s.status,
-        "qty": s.qty,
-        "entry_price": s.entry_price,
-        "exit_price": s.exit_price,
-        "exit_reason": s.exit_reason,
-        "ambiguous": s.ambiguous,
-        "pnl_gbp": round(s.pnl_gbp, 4),
-    }
-
-
 def run(
     days: int,
     symbols: list[str],
     starting_cash: float,
     broker: str = "trading212",
+    rules_version: str = "trade-rules-v2",
+    interval: str | None = None,
 ) -> dict:
     settings = apply_broker_profile(
         Settings(starting_cash_gbp=starting_cash),
         broker,
     )
+    rules = load_trade_rules(rules_version)
+    settings = settings.model_copy(
+        update={
+            "trade_rules_version": rules.version,
+            "reward_risk": rules.reward_risk,
+            "setup_expiry_bars": rules.setup_expiry_bars,
+        }
+    )
+    bar_interval = interval or rules.interval
     per_symbol: list[dict] = []
     all_trades: list[dict] = []
     pattern_totals: dict[str, int] = {}
@@ -357,7 +422,7 @@ def run(
 
     for symbol in symbols:
         print(f"\n=== {symbol} ===", flush=True)
-        raw = fetch_5m(symbol, period="60d")
+        raw = fetch_bars(symbol, interval=bar_interval, period="60d")
         if raw.empty:
             feed_notes.append({"symbol": symbol, "healthy": False, "message": "empty"})
             per_symbol.append(
@@ -375,6 +440,7 @@ def run(
             {
                 "symbol": symbol,
                 "healthy": True,
+                "interval": bar_interval,
                 "raw_bars": len(raw),
                 "filtered_bars": len(df),
                 "trading_days": int(
@@ -398,7 +464,7 @@ def run(
                 }
             )
             continue
-        result, _ = simulate_symbol(symbol, df, settings, starting_cash)
+        result, _ = simulate_symbol(symbol, df, settings, starting_cash, rules)
         for k, v in result.patterns.items():
             pattern_totals[k] = pattern_totals.get(k, 0) + v
         all_trades.extend(result.trades)
@@ -416,10 +482,15 @@ def run(
     portfolio_return_pct = (
         100.0 * (portfolio_end - portfolio_start) / portfolio_start if portfolio_start else 0.0
     )
+    all_symbols_positive = all(
+        float(s.get("realized_pnl") or 0) > 0 for s in ran
+    ) and len(ran) == len(symbols)
 
     return {
         "detector_version": DETECTOR_VERSION,
-        "trade_rules_version": settings.trade_rules_version,
+        "trade_rules_version": rules.version,
+        "trade_rules_label": rules.label,
+        "interval": bar_interval,
         "cost_profile": broker,
         "cost_profile_label": profile_meta["label"],
         "costs": {
@@ -447,18 +518,20 @@ def run(
         "portfolio_end_gbp": round(portfolio_end, 2),
         "portfolio_return_pct": round(portfolio_return_pct, 4),
         "profitable": total_pnl > 0,
+        "all_symbols_positive": all_symbols_positive,
         "per_symbol": per_symbol,
         "disclaimer": (
-            "Paper simulation on DELAYED Yahoo 5m bars. Broker/tax costs follow "
+            "Paper simulation on DELAYED Yahoo bars. Broker/tax costs follow "
             "COST_SOURCES.md (GOV.UK SDRT, Takeover Panel PTM, T212/eToro schedules). "
-            "Spread/slippage are market-friction assumptions. Not live execution proof."
+            "Spread/slippage are market-friction assumptions. Not live execution proof. "
+            "trade-rules-v2 was fit on this 10d window — treat as research, not proven edge."
         ),
     }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="20d candle pattern paper backtest")
-    parser.add_argument("--days", type=int, default=20)
+    parser = argparse.ArgumentParser(description="Candle pattern paper backtest")
+    parser.add_argument("--days", type=int, default=10)
     parser.add_argument(
         "--symbols",
         default="VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
@@ -471,20 +544,38 @@ def main() -> int:
         choices=sorted(BROKER_PROFILES),
         help="Cost profile from COST_SOURCES.md",
     )
+    parser.add_argument(
+        "--rules",
+        default="trade-rules-v2",
+        choices=sorted(TRADE_RULE_PROFILES),
+        help="Trade rule profile",
+    )
+    parser.add_argument(
+        "--interval",
+        default="",
+        help="Override bar interval (default: from trade rules)",
+    )
     parser.add_argument("--out", default="")
     args = parser.parse_args()
     symbols = [s.strip() for s in args.symbols.split(",") if s.strip()]
-    report = run(args.days, symbols, args.cash, broker=args.broker)
+    report = run(
+        args.days,
+        symbols,
+        args.cash,
+        broker=args.broker,
+        rules_version=args.rules,
+        interval=args.interval or None,
+    )
 
+    tag = f"{args.days}d_{args.rules}_{args.broker}".replace("trade-rules-", "rules")
     out_path = (
         Path(args.out)
         if args.out
-        else Path("artifacts") / f"backtest_20d_{args.broker}_report.json"
+        else Path("artifacts") / f"backtest_{tag}_report.json"
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(report, indent=2, default=str))
 
-    # Compact summary (no full trade lists) for quick review
     compact = {k: v for k, v in report.items() if k != "per_symbol"}
     compact["exit_reason_counts"] = dict(
         Counter(
@@ -508,7 +599,6 @@ def main() -> int:
         }
         for s in report["per_symbol"]
     ]
-    # Keep summary alongside the report (e.g. backtest_10d_trading212_summary.json)
     summary_path = out_path.with_name(
         out_path.name.replace("_report.json", "_summary.json")
         if out_path.name.endswith("_report.json")
@@ -520,7 +610,11 @@ def main() -> int:
     print(f"Candle pattern detector — last {args.days} trading days paper backtest")
     print("=" * 72)
     print(f"Symbols: {', '.join(symbols)}")
-    print(f"Detector: {report['detector_version']} | Rules: {report['trade_rules_version']}")
+    print(
+        f"Detector: {report['detector_version']} | Rules: {report['trade_rules_version']} "
+        f"({report['interval']})"
+    )
+    print(f"  {report['trade_rules_label']}")
     print(f"Costs: {report['cost_profile']} — {report['cost_profile_label']}")
     print(f"Patterns detected: {report['pattern_totals'] or '(none)'}")
     print(f"Trades: {report['trade_count']}  wins={report['wins']}  losses={report['losses']}")
@@ -533,6 +627,7 @@ def main() -> int:
         f"({report['portfolio_return_pct']:+.3f}%)"
     )
     print(f"Profitable: {report['profitable']}")
+    print(f"All 5 symbols positive: {report['all_symbols_positive']}")
     print(f"Exit reasons: {compact['exit_reason_counts']}")
     print("-" * 72)
     for s in report["per_symbol"]:
@@ -556,7 +651,7 @@ def main() -> int:
     print(report["disclaimer"])
     print(f"Wrote {out_path.resolve()}")
     print(f"Wrote {summary_path.resolve()}")
-    return 0
+    return 0 if report["all_symbols_positive"] else 1
 
 
 if __name__ == "__main__":
