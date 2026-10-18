@@ -1,0 +1,140 @@
+{
+  "oc_zero_cost": {
+    "execution_mode": "oc_zero_cost",
+    "folds": 191,
+    "period_start": "2022-01-07",
+    "period_end": "2026-10-14",
+    "min_test_start": "2023-01-06",
+    "models": [
+      {
+        "model_type": "naive",
+        "mean_accuracy": 0.509760224599742,
+        "std_accuracy": 0.13007190406146205,
+        "folds": 191,
+        "accuracy": 0.509760224599742,
+        "n": 4766
+      },
+      {
+        "model_type": "naive_const_p",
+        "mean_accuracy": 0.509760224599742,
+        "std_accuracy": 0.13007190406146205,
+        "folds": 191,
+        "accuracy": 0.509760224599742,
+        "n": 4766
+      },
+      {
+        "model_type": "ridge",
+        "mean_accuracy": 0.5070282267243342,
+        "std_accuracy": 0.10884807685088944,
+        "folds": 191,
+        "accuracy": 0.5070282267243342,
+        "n": 4766
+      },
+      {
+        "model_type": "logistic",
+        "mean_accuracy": 0.5103892556339631,
+        "std_accuracy": 0.1176806488067959,
+        "folds": 191,
+        "accuracy": 0.5103892556339631,
+        "n": 4766
+      },
+      {
+        "model_type": "lightgbm",
+        "mean_accuracy": 0.5122763487366264,
+        "std_accuracy": 0.12349870538466148,
+        "folds": 191,
+        "accuracy": 0.5122763487366264,
+        "n": 4766
+      }
+    ],
+    "direction_success": {
+      "passed": false,
+      "best_model": "lightgbm",
+      "best_accuracy": 0.5122763487366264,
+      "naive_accuracy": 0.509760224599742,
+      "n_test": 955,
+      "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (51.0%)",
+      "reason": "did_not_beat_chance_threshold",
+      "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+    },
+    "n_trades": 1164,
+    "win_rate": 0.5060137457044673,
+    "avg_gross": 0.0007096270663329648,
+    "avg_net": 0.0007096270663329648,
+    "equity_compounded": 0.01661207047915214,
+    "trade_pass": false,
+    "exit_reasons": {
+      "session_close": 1164
+    },
+    "decision": "NO_GROSS_EDGE_EXPAND_UNIVERSE_OR_OBJECTIVE"
+  },
+  "oc_with_costs": {
+    "execution_mode": "oc_with_costs",
+    "folds": 191,
+    "period_start": "2022-01-07",
+    "period_end": "2026-10-14",
+    "min_test_start": "2023-01-06",
+    "models": [
+      {
+        "model_type": "naive",
+        "mean_accuracy": 0.509760224599742,
+        "std_accuracy": 0.13007190406146205,
+        "folds": 191,
+        "accuracy": 0.509760224599742,
+        "n": 4766
+      },
+      {
+        "model_type": "naive_const_p",
+        "mean_accuracy": 0.509760224599742,
+        "std_accuracy": 0.13007190406146205,
+        "folds": 191,
+        "accuracy": 0.509760224599742,
+        "n": 4766
+      },
+      {
+        "model_type": "ridge",
+        "mean_accuracy": 0.5070282267243342,
+        "std_accuracy": 0.10884807685088944,
+        "folds": 191,
+        "accuracy": 0.5070282267243342,
+        "n": 4766
+      },
+      {
+        "model_type": "logistic",
+        "mean_accuracy": 0.5103892556339631,
+        "std_accuracy": 0.1176806488067959,
+        "folds": 191,
+        "accuracy": 0.5103892556339631,
+        "n": 4766
+      },
+      {
+        "model_type": "lightgbm",
+        "mean_accuracy": 0.5122763487366264,
+        "std_accuracy": 0.12349870538466148,
+        "folds": 191,
+        "accuracy": 0.5122763487366264,
+        "n": 4766
+      }
+    ],
+    "direction_success": {
+      "passed": false,
+      "best_model": "lightgbm",
+      "best_accuracy": 0.5122763487366264,
+      "naive_accuracy": 0.509760224599742,
+      "n_test": 955,
+      "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (51.0%)",
+      "reason": "did_not_beat_chance_threshold",
+      "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+    },
+    "n_trades": 1164,
+    "win_rate": 0.2422680412371134,
+    "avg_gross": 0.0007096270663329648,
+    "avg_net": -0.008290372933667037,
+    "equity_compounded": -0.17556774194095937,
+    "trade_pass": false,
+    "exit_reasons": {
+      "session_close": 1164
+    },
+    "decision": "NO_GROSS_EDGE_EXPAND_UNIVERSE_OR_OBJECTIVE"
+  }
+}

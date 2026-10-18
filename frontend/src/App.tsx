@@ -12,6 +12,7 @@ import { HomePage } from "./pages/HomePage";
 import { PatternsPage } from "./pages/PatternsPage";
 import { BacktestsPage } from "./pages/BacktestsPage";
 import { DriftPage } from "./pages/DriftPage";
+import { CandleLabPage } from "./pages/CandleLabPage";
 
 const links = [
   ["/", "Overview"],
@@ -20,6 +21,7 @@ const links = [
   ["/stocks", "Stocks"],
   ["/forecasts", "Forecasts"],
   ["/patterns", "Patterns"],
+  ["/candle-lab", "Candle patterns"],
   ["/models", "Models"],
   ["/backtests", "Backtests"],
   ["/intraday", "Intraday"],
@@ -72,6 +74,7 @@ export function App() {
           <Route path="/stocks" element={<StocksPage />} />
           <Route path="/forecasts" element={<ForecastsPage />} />
           <Route path="/patterns" element={<PatternsPage />} />
+          <Route path="/candle-lab" element={<CandleLabPage />} />
           <Route path="/models" element={<ModelsPage />} />
           <Route path="/backtests" element={<BacktestsPage />} />
           <Route path="/intraday" element={<IntradayLabPage />} />

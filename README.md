@@ -46,10 +46,24 @@ docker compose run --rm api python -m app.cli daily-run --session 2024-03-15 --o
 - External Postgres + S3 required for durable GitHub Actions runs (not auto-provisioned)
 - Twelve Data free tier is **not** used (LSE intraday not on free tier)
 
+## Live Candle Pattern Test (separate app)
+
+Independent of Pattern Lab models/DB. IG-defined candlestick detection on
+delayed Yahoo 5m bars, paper longs, and a **Learn · stock day** chart with
+entry/stop/take-profit overlays. See [candle-lab/README.md](candle-lab/README.md).
+
+Open via Pattern Lab UI tab **Candle patterns**, or run:
+
+```bash
+cd candle-lab/backend && pip install -e ".[dev]" && uvicorn app.main:app --port 8100
+cd candle-lab/frontend && npm install && npm run dev   # :3100
+```
+
 ## Tests
 
 ```bash
 docker compose run --rm api pytest -q
+cd candle-lab/backend && pytest -q
 ```
 
 ## Architecture

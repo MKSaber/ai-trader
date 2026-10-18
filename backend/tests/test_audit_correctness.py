@@ -118,3 +118,22 @@ def test_rolling_folds_are_time_ordered() -> None:
     for tr, te, spec in folds:
         assert spec.train_end < spec.test_start
         assert tr.sum() and te.sum()
+
+
+def test_min_test_start_skips_diagnostic_window() -> None:
+    """Reserved eval only keeps folds after the diagnostic cut."""
+    dates = np.array(
+        [date(2022, 1, 1) + timedelta(days=i) for i in range(400)], dtype=object
+    )
+    cut = date(2023, 1, 6)
+    folds = iter_rolling_folds(
+        dates,
+        train_sessions=85,
+        test_sessions=5,
+        step_sessions=5,
+        min_test_start=cut,
+        max_folds=5,
+    )
+    assert folds
+    for _tr, _te, spec in folds:
+        assert spec.test_start >= cut

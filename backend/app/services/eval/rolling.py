@@ -64,6 +64,10 @@ def _session_dates(index: pd.Index) -> np.ndarray:
     )
 
 
+# Diagnostic max_folds=40 window ended here — reserved history, not fresh validation.
+DIAGNOSTIC_WINDOW_END = date(2023, 1, 5)
+
+
 def iter_rolling_folds(
     session_dates: np.ndarray,
     *,
@@ -71,8 +75,13 @@ def iter_rolling_folds(
     test_sessions: int = 5,
     step_sessions: int = 5,
     max_folds: int | None = None,
+    min_test_start: date | None = None,
 ) -> list[tuple[np.ndarray, np.ndarray, FoldSpec]]:
-    """Build sliding chronological folds (no leakage across the cut)."""
+    """Build sliding chronological folds (no leakage across the cut).
+
+    If min_test_start is set, only folds whose test window starts on/after that
+    date are kept (reserved evaluation after a prior diagnostic window).
+    """
     uniq = np.array(sorted(set(session_dates)), dtype=object)
     need = train_sessions + test_sessions
     if len(uniq) < need:
@@ -83,6 +92,7 @@ def iter_rolling_folds(
     folds: list[tuple[np.ndarray, np.ndarray, FoldSpec]] = []
     start_i = 0
     fold_i = 0
+    kept = 0
     while start_i + need <= len(uniq):
         train_set = set(uniq[start_i : start_i + train_sessions])
         test_set = set(
@@ -93,6 +103,12 @@ def iter_rolling_folds(
                 + test_sessions
             ]
         )
+        test_start = min(test_set)
+        test_end = max(test_set)
+        if min_test_start is not None and test_start < min_test_start:
+            start_i += step_sessions
+            fold_i += 1
+            continue
         train_idx = np.array([d in train_set for d in session_dates])
         test_idx = np.array([d in test_set for d in session_dates])
         folds.append(
@@ -103,19 +119,27 @@ def iter_rolling_folds(
                     fold=fold_i,
                     train_start=min(train_set),
                     train_end=max(train_set),
-                    test_start=min(test_set),
-                    test_end=max(test_set),
+                    test_start=test_start,
+                    test_end=test_end,
                     n_train=int(train_idx.sum()),
                     n_test=int(test_idx.sum()),
                 ),
             )
         )
+        kept += 1
         fold_i += 1
         start_i += step_sessions
-        if max_folds is not None and fold_i >= max_folds:
+        if max_folds is not None and kept >= max_folds:
             break
     if not folds:
-        raise ValueError("No rolling folds could be constructed")
+        raise ValueError(
+            "No rolling folds could be constructed"
+            + (
+                f" with min_test_start={min_test_start.isoformat()}"
+                if min_test_start
+                else ""
+            )
+        )
     return folds
 
 
@@ -335,6 +359,7 @@ def run_rolling_walkforward(
     execution_mode: ExecutionMode = "stop_tp_costs",
     stamp_scenario: str = "stress_1pct",
     purge_label_overlap: bool = True,
+    min_test_start: date | None = None,
     starting_cash: float = 100_000.0,
     artifact_dir: Path | None = None,
 ) -> dict[str, Any]:
@@ -355,6 +380,7 @@ def run_rolling_walkforward(
         test_sessions=test_sessions,
         step_sessions=step_sessions,
         max_folds=max_folds,
+        min_test_start=min_test_start,
     )
     x, _cols = feature_matrix(frame)
     y_reg = frame["target_next_session_oc"].to_numpy(dtype=float)
@@ -560,6 +586,10 @@ def run_rolling_walkforward(
             "stamp_scenario": stamp_scenario,
             "purge_label_overlap": purge_label_overlap,
             "purged_train_rows": purged_rows_total,
+            "min_test_start": min_test_start.isoformat()
+            if min_test_start
+            else None,
+            "diagnostic_window_end": DIAGNOSTIC_WINDOW_END.isoformat(),
             "period_start": fold_summaries[0]["train_start"]
             if fold_summaries
             else None,

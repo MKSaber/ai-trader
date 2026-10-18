@@ -162,3 +162,22 @@ profitable edge is demonstrated** after correctness fixes.
 - Features using only information ≤ signal time.
 - Labels = path after signal (touch stop/TP / time stop), with purge spanning the hold.
 - Execution at next bar open; costs per side; long-only until short borrow is modelled.
+
+---
+
+## Bounded reserved experiment (252 / after diagnostic window)
+
+Policy: diagnostic window ends **2023-01-05** (`DIAGNOSTIC_WINDOW_END`). Fresh
+folds use `min_test_start=2023-01-06`. Old 231-fold long+short run remains history.
+
+Config: train **252**, test 5, step 5, long-only, purge on, `sdrt_0_5pct`.
+Artifact: `backend/sample_artifacts/BOUNDED_252_RESERVED.json`.
+
+| Mode | Folds | Best acc | Naive | Avg gross | Equity | Dir gate |
+|------|-------|----------|-------|-----------|--------|----------|
+| oc_zero_cost | 191 | LGBM **51.2%** | 51.0% | +0.07% | +1.7% | **FAIL** |
+| oc_with_costs | 191 | 51.2% | 51.0% | +0.07% | −17.6% | **FAIL** |
+
+**Decision:** `NO_GROSS_EDGE_EXPAND_UNIVERSE_OR_OBJECTIVE` — do **not** revisit
+stops/holds/threshold tuning. Next bounded work should change **universe**
+and/or **prediction objective**, not chase the 55% gate on this feature set.

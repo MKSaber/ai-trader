@@ -31,6 +31,28 @@ This is **not** an intraday timing model.
 | Stop / TP | 1.5× / 2.0× ATR (stop_tp mode) |
 | Execution modes | `stop_tp_costs`, `oc_with_costs`, `oc_zero_cost` |
 
+### Reserved evaluation window
+
+The corrected diagnostic batch used `max_folds=40` and ended at
+**`DIAGNOSTIC_WINDOW_END = 2023-01-05`** (`rolling.DIAGNOSTIC_WINDOW_END`).
+
+- That window (and the older unrestricted 231-fold long+short run) is
+  **research history**, not fresh validation.
+- Bounded follow-ups must set `min_test_start=2023-01-06` so test folds
+  start **after** the diagnostic window.
+- Only if the **direction gate PASSes** on that reserved period (vs
+  train-majority naive) should costs/holds be revisited. Do not chase PASS.
+
+### Bounded experiment (252 / reserved)
+
+```bash
+# Gross edge check (zero cost) on reserved folds
+curl -X POST 'http://localhost:8000/api/research/rolling?fetch=false&train_sessions=252&test_sessions=5&step_sessions=5&long_only=true&execution_mode=oc_zero_cost&stamp_scenario=sdrt_0_5pct&min_test_start=2023-01-06&purge_label_overlap=true'
+
+# Same forecasts with realistic SDRT costs (only meaningful if direction gate passed)
+curl -X POST 'http://localhost:8000/api/research/rolling?fetch=false&train_sessions=252&test_sessions=5&step_sessions=5&long_only=true&execution_mode=oc_with_costs&stamp_scenario=sdrt_0_5pct&min_test_start=2023-01-06&purge_label_overlap=true'
+```
+
 ## Costs
 
 | Component | Default |

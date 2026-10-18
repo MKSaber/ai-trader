@@ -402,16 +402,16 @@ def rolling(
     execution_mode: str = "stop_tp_costs",
     stamp_scenario: str = "stress_1pct",
     purge_label_overlap: bool = True,
+    min_test_start: date | None = None,
     fetch: bool = False,
     lookback_days: int = 1825,
     symbols: str = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
-    """Rolling walk-forward: 85 train / 5 test, slide across history.
+    """Rolling walk-forward (defaults: long-only, purge, stress stamp).
 
-    Defaults: long-only, label purge on, stress 1% stamp, no refetch.
-    execution_mode: stop_tp_costs | oc_zero_cost | oc_with_costs
-    stamp_scenario: stress_1pct | sdrt_0_5pct
+    Use min_test_start to evaluate only folds after a reserved diagnostic
+    window (e.g. 2023-01-06 after DIAGNOSTIC_WINDOW_END=2023-01-05).
     """
     allowed_modes = {"stop_tp_costs", "oc_zero_cost", "oc_with_costs"}
     if execution_mode not in allowed_modes:
@@ -434,6 +434,7 @@ def rolling(
             execution_mode=execution_mode,
             stamp_scenario=stamp_scenario,
             purge_label_overlap=purge_label_overlap,
+            min_test_start=min_test_start,
         )
     except Exception as exc:  # noqa: BLE001
         db.rollback()
