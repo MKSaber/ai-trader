@@ -442,8 +442,8 @@ def day_chart_payload(
     start_utc = start.astimezone(timezone.utc)
     end_utc = end.astimezone(timezone.utc)
 
-    # Ensure we have data
-    df, status = fetch_intraday_5m(symbol, period="7d")
+    # Yahoo 5m history is typically ~60 days — use that for Learn (not 7d).
+    df, status = fetch_intraday_5m(symbol, period="60d")
     if not df.empty:
         _upsert_bars(db, symbol, df)
 
@@ -469,6 +469,26 @@ def day_chart_payload(
         }
         for r in rows
     ]
+
+    # London calendar days that currently have bars (for empty-day hints)
+    all_bars = db.scalars(
+        select(CandleBar)
+        .where(
+            CandleBar.symbol == symbol,
+            CandleBar.interval_minutes == s.interval_minutes,
+        )
+        .order_by(CandleBar.bar_start.desc())
+        .limit(5000)
+    ).all()
+    available_days: list[str] = []
+    seen: set[str] = set()
+    for b in all_bars:
+        local = b.bar_start.astimezone(LONDON).date().isoformat()
+        if local not in seen:
+            seen.add(local)
+            available_days.append(local)
+    available_days.sort(reverse=True)
+    suggested_day = available_days[0] if available_days else None
 
     # Detect on closed bars for the day (+ prior warm-up from DB)
     frame = _bars_frame(db, symbol)
@@ -552,6 +572,16 @@ def day_chart_payload(
             }
         )
 
+    empty_reason = None
+    if not candles:
+        wd = day_date.weekday()
+        if wd >= 5:
+            empty_reason = "weekend_no_lse_session"
+        elif suggested_day and day != suggested_day:
+            empty_reason = "no_bars_for_day"
+        else:
+            empty_reason = "no_bars_in_feed"
+
     return {
         "symbol": symbol,
         "day": day,
@@ -566,10 +596,14 @@ def day_chart_payload(
         "candles": candles,
         "patterns": patterns,
         "setups": setups,
+        "available_days": available_days[:20],
+        "suggested_day": suggested_day,
+        "empty_reason": empty_reason,
         "detector_version": s.detector_version,
         "trade_rules_version": s.trade_rules_version,
         "note": (
             "Learning chart: patterns detected on closed 5m candles; "
-            "buy/stop/take-profit levels follow trade-rules-v1 (illustrative)."
+            "buy/stop/take-profit levels follow trade-rules-v1 (illustrative). "
+            "Pick a London session weekday — weekends have no LSE 5m bars."
         ),
     }
