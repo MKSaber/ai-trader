@@ -12,19 +12,18 @@ Under Trading 212 / GOV.UK costs (0.5% SDRT on buys, PTM £1.50 > £10k):
 4. **Session flat** cut overnight/continuation moves.
 5. **No cost gate** — setups that could not clear round-trip costs still filled.
 
-## trade-rules-v2 → v2.1 → v2.2
+## trade-rules-v2 → v2.1 → v2.2 → v2.3
 
-| Lever | v1 | v2 | v2.1 | **v2.2** |
-|-------|----|----|------|----------|
-| Bar interval | 5m | 60m | 60m | 60m |
-| Patterns traded | engulf+hammer | engulf+hammer | engulfing only | engulfing only |
-| Reward:risk | 2 | 4 | 5 | **5** |
-| Stop | pattern low | low − 1× range | low − 1× range | low − 1× range |
-| Hours (London) | any | 10–15 | 11, 12, 14, 15 | **15 only** |
-| Cooloff after stop | — | — | — | **yes** |
-| Max stops / symbol | — | — | — | **2** |
-| Risk / max position | — | 1% / 25% | 1% / 25% | **1.5% / 35%** |
-| Cost gate | no | yes (4R) | yes (5R) | yes (5R) |
+| Lever | v2.1 | v2.2 | **v2.3** |
+|-------|------|------|----------|
+| Hours (London) | 11/12/14/15 | 15 only | **15 only** |
+| Cooloff after stop | — | yes | **yes** |
+| Max stops / symbol | — | 2 | **2 (&lt;£50k) · 1 (≥£50k)** |
+| Risk / max position | 1% / 25% | 1.5% / 35% | **1.5%/35% (&lt;£50k) · 0.8%/15% (≥£50k)** |
+| Symbol blocklist | — | — | **banks† / defence / chronic drags** |
+| Patterns / RR | engulf / 5 | engulf / 5 | engulf / 5 |
+
+† HSBA kept (top-10 megacap).
 
 **Why v2.1:** on the top-10 / 30d / £20k book, hammers and hours 10 & 13 were
 net losers; raising RR to 5 let winners pay for more stops.
@@ -40,9 +39,16 @@ not guaranteed live edge.
 **Longer stress (top-10 · £20k · T212):** v2.2 stayed green at **90d +£1,177**
 and **120d +£742**; v2.1 was −£1,274 / −£2,059 on the same windows.
 
+**Why v2.3 (top-50 · £100k):** v2.2 went red on the broad book (−£4.3k / 60d).
+Root causes: rest_30 dilution, banks/defence/fin stops, size amplification, SDRT.
+v2.3 keeps hour-15 + cooloff, adds drag-name **blocklist**, and **cash-aware**
+max-stops / sizing (tighten at ≥£50k). Retest top-50 £100k: **60d +£2.6k**,
+**90d +£5.6k**, **120d +£3.0k**. Top-10 £20k unchanged vs v2.2 (+£620 / +£1,177 /
++£742).
+
 ```bash
 cd candle-lab/backend && . .venv/bin/activate
-python scripts/portfolio_20d.py --days 120 --cash 20000 --rules trade-rules-v2.2 --broker trading212
+python scripts/portfolio_20d.py --days 60 --cash 100000 --rules trade-rules-v2.3 --broker trading212
 ```
 
 

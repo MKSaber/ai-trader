@@ -1,0 +1,19 @@
+{
+  "rules": "trade-rules-v2.3",
+  "fixes_from_v22_root_causes": [
+    "symbol_blocklist for banks (ex-HSBA), defence, chronic rest_30 drags",
+    "cash-aware max_stops: 2 under £50k, 1 at £50k+",
+    "cash-aware size: 1.5%/35% under £50k, 0.8%/15% at £50k+"
+  ],
+  "top50_100k": {
+    "60d": {"v22": -4321.34, "v23": 2566.58},
+    "90d": {"v22": -3341.31, "v23": 5634.30},
+    "120d": {"v22": -1811.30, "v23": 2981.86}
+  },
+  "top10_20k_regression": {
+    "60d": {"v22": 620.08, "v23": 620.08},
+    "90d": {"v22": 1177.07, "v23": 1177.07},
+    "120d": {"v22": 741.67, "v23": 741.67},
+    "note": "Matches v2.2 — small-book knobs preserved."
+  }
+}

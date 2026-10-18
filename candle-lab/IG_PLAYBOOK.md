@@ -1,7 +1,7 @@
 # IG candle playbook → buy / sell / stop / take-profit
 
 Qualitative shapes follow [IG Academy candlestick patterns](https://www.ig.com/uk/ig-academy/the-basics-of-technical-analysis/candlestick-patterns).
-Numbers below are **trade-rules-v2.2** (our experiment thresholds), not IG official levels.
+Numbers below are **trade-rules-v2.3** (our experiment thresholds), not IG official levels.
 
 Use a **60-minute** London chart (not 5m).
 
@@ -16,7 +16,10 @@ All of these must be true on a **closed** 60m candle at **15:00 London only**:
 3. Pattern range `(high − low) / high` ≥ **0.3%**.
 4. You do not already have an open long in that stock today (max **1 new trade / stock / day**).
 5. **Cooloff:** if the last exit on this symbol was a stop, skip the next signal.
-6. **Max stops:** skip the symbol after **2** stop-outs in the window.
+6. **Max stops:** skip after **2** stop-outs under £50k, or **1** on larger books.
+7. **Blocklist:** skip banks (except HSBA), defence (BA/RR), and chronic drag
+   names (III, ADM, AAF, SMT, EXPN, IHG, EDV, SN, SVT, SGRO, HLN, DGE, SSE, UU,
+   BHP, ANTO, CCH, ABF, INF, PRU, LGEN).
 
 **Entry:** buy stop (or market once touched) just above the pattern candle high  
 `entry ≈ high × 1.0005`.
@@ -40,10 +43,10 @@ target = entry + 5 × risk            # reward:risk = 5
 
 Exit at the target when hit. If neither stop nor target hits by the end of the sample, flat at last close (paper sim).
 
-## Sizing (£20k shared book)
+## Sizing (shared book)
 
-- Risk **1.5%** of cash per trade.
-- Cap any single name at **35%** of cash (so 5R can clear 0.5% SDRT).
+- Under **£50k**: risk **1.5%**, max position **35%** (top-10 pound edge).
+- **£50k+**: risk **0.8%**, max position **15%** (limits −£1k+ stops on large books).
 
 ## When to SELL / stay flat
 
@@ -60,4 +63,4 @@ Before sizing, planned **5R** should still beat round-trip costs (≈ **0.5% SDR
 
 ## One-line cheat sheet
 
-> On 60m, in a downtrend, **15:00 London only**: bullish engulfing (≥0.3% range) → buy above high, stop one range below low, take profit at **5R**. Cooloff after a stop; max 2 stops per symbol. Size at 1.5% risk / 35% max position.
+> On 60m, in a downtrend, **15:00 London only**: bullish engulfing (≥0.3% range) → buy above high, stop one range below low, take profit at **5R**. Cooloff after a stop; skip blocklisted drag names. Under £50k: max 2 stops, size 1.5%/35%. Else: max 1 stop, size 0.8%/15%.

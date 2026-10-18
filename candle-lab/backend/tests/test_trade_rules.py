@@ -40,6 +40,36 @@ def test_v22_stay_green_defaults():
     assert r.max_position_frac == 0.35
 
 
+def test_v23_broad_book_defaults():
+    r = load_trade_rules("trade-rules-v2.3")
+    assert r.trade_hours_london == (15,)
+    assert r.cooloff_after_stop is True
+    assert r.max_stops_per_symbol == 2
+    assert r.max_stops_for_cash(20_000) == 2
+    assert r.max_stops_for_cash(100_000) == 1
+    assert r.risk_frac == 0.015
+    assert r.max_position_frac == 0.35
+    assert r.sizing_for_cash(20_000) == (0.015, 0.35)
+    assert r.sizing_for_cash(100_000) == (0.008, 0.15)
+    assert "III.L" in r.blocklist_set
+    assert "BA.L" in r.blocklist_set
+    assert "LLOY.L" in r.blocklist_set
+    # top-10 megacaps must remain tradeable
+    for sym in (
+        "HSBA.L",
+        "AZN.L",
+        "SHEL.L",
+        "RIO.L",
+        "BATS.L",
+        "ULVR.L",
+        "BP.L",
+        "GSK.L",
+        "NG.L",
+        "REL.L",
+    ):
+        assert sym not in r.blocklist_set
+
+
 def test_stop_pad_widens_stop():
     entry, stop, target = setup_levels(
         high=110,

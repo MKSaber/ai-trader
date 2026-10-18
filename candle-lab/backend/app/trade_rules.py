@@ -3,6 +3,7 @@
 trade-rules-v1: original 5m long breakout (often uneconomic vs 0.5% SDRT).
 trade-rules-v2 / v2.1: cost-aware 60m rules.
 trade-rules-v2.2: stay green on top-10 / 60d (hour-15 filter + cooloff/sizing).
+trade-rules-v2.3: broad-book fix — blocklist drag names, max 1 stop, smaller size.
 """
 
 from __future__ import annotations
@@ -95,6 +96,73 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
         "risk_frac": 0.015,
         "max_position_frac": 0.35,
     },
+    # Root-cause fixes for top-50 / £100k drawdown under v2.2:
+    # - rest_30 + banks/defence/volatile-fin were ~80% of 60d loss
+    # - max_stops=2 still left dozens of double-stop names on 90/120d
+    # - 1.5%/35% sizing at £100k made single stops −£1k+ (III −£1.46k)
+    # Keep hour-15 / cooloff / engulfing / RR=5 (still green on top-10).
+    "trade-rules-v2.3": {
+        "label": (
+            "60m broad-book: engulfing-only, RR=5, hour 15, cooloff, "
+            "max 1 stop/symbol, blocklist drag names, cash-aware size"
+        ),
+        "interval": "60m",
+        "reward_risk": 5.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (15,),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing",),
+        "cooloff_after_stop": True,
+        "trail_breakeven_r": None,
+        # Default = top-10 (£20k) knobs; tighten on large books (see large_book_*).
+        "max_stops_per_symbol": 2,
+        "risk_frac": 0.015,
+        "max_position_frac": 0.35,
+        "large_book_cash_gbp": 50_000.0,
+        "large_book_risk_frac": 0.008,
+        "large_book_max_position_frac": 0.15,
+        "large_book_max_stops_per_symbol": 1,
+        # Preserve top-10 megacaps; block root-cause drag cohorts.
+        "symbol_blocklist": (
+            # banks (HSBA kept — top-10)
+            "LLOY.L",
+            "BARC.L",
+            "NWG.L",
+            "STAN.L",
+            # defence
+            "BA.L",
+            "RR.L",
+            # volatile / chronic-stop fin & services
+            "III.L",
+            "ADM.L",
+            "AAF.L",
+            "SMT.L",
+            "EXPN.L",
+            "IHG.L",
+            # chronic rest_30 stops
+            "EDV.L",
+            "SN.L",
+            "SVT.L",
+            "SGRO.L",
+            "HLN.L",
+            "DGE.L",
+            "SSE.L",
+            "UU.L",
+            "BHP.L",
+            "ANTO.L",
+            "CCH.L",
+            "ABF.L",
+            "INF.L",
+            "PRU.L",
+            "LGEN.L",
+        ),
+    },
 }
 
 
@@ -119,13 +187,42 @@ class TradeRules:
     max_stops_per_symbol: int | None = None
     risk_frac: float = 0.01
     max_position_frac: float = 0.25
+    symbol_blocklist: tuple[str, ...] = ()
+    large_book_cash_gbp: float | None = None
+    large_book_risk_frac: float | None = None
+    large_book_max_position_frac: float | None = None
+    large_book_max_stops_per_symbol: int | None = None
 
     @property
     def bullish_set(self) -> set[str]:
         return set(self.bullish_patterns)
 
+    @property
+    def blocklist_set(self) -> set[str]:
+        return set(self.symbol_blocklist)
 
-def load_trade_rules(version: str = "trade-rules-v2.2") -> TradeRules:
+    def is_large_book(self, cash: float) -> bool:
+        return (
+            self.large_book_cash_gbp is not None and cash >= self.large_book_cash_gbp
+        )
+
+    def sizing_for_cash(self, cash: float) -> tuple[float, float]:
+        """Return (risk_frac, max_position_frac), scaling down on large books."""
+        if (
+            self.is_large_book(cash)
+            and self.large_book_risk_frac is not None
+            and self.large_book_max_position_frac is not None
+        ):
+            return self.large_book_risk_frac, self.large_book_max_position_frac
+        return self.risk_frac, self.max_position_frac
+
+    def max_stops_for_cash(self, cash: float) -> int | None:
+        if self.is_large_book(cash) and self.large_book_max_stops_per_symbol is not None:
+            return self.large_book_max_stops_per_symbol
+        return self.max_stops_per_symbol
+
+
+def load_trade_rules(version: str = "trade-rules-v2.3") -> TradeRules:
     if version not in TRADE_RULE_PROFILES:
         raise ValueError(
             f"Unknown trade rules {version!r}; choose from {sorted(TRADE_RULE_PROFILES)}"
@@ -156,6 +253,23 @@ def load_trade_rules(version: str = "trade-rules-v2.2") -> TradeRules:
         max_stops_per_symbol=raw.get("max_stops_per_symbol"),
         risk_frac=float(raw.get("risk_frac", 0.01)),
         max_position_frac=float(raw.get("max_position_frac", 0.25)),
+        symbol_blocklist=tuple(raw.get("symbol_blocklist") or ()),
+        large_book_cash_gbp=(
+            float(raw["large_book_cash_gbp"])
+            if raw.get("large_book_cash_gbp") is not None
+            else None
+        ),
+        large_book_risk_frac=(
+            float(raw["large_book_risk_frac"])
+            if raw.get("large_book_risk_frac") is not None
+            else None
+        ),
+        large_book_max_position_frac=(
+            float(raw["large_book_max_position_frac"])
+            if raw.get("large_book_max_position_frac") is not None
+            else None
+        ),
+        large_book_max_stops_per_symbol=raw.get("large_book_max_stops_per_symbol"),
     )
 
 
