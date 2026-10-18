@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CandleChart } from "./CandleChart";
+import { DayReplay } from "./DayReplay";
 
 const API = import.meta.env.VITE_CANDLE_API || "/api";
 const SYMBOLS = ["VOD.L", "BP.L", "HSBA.L", "GSK.L", "AZN.L"];
@@ -90,7 +91,7 @@ function lastLondonSessionDay(): string {
 }
 
 export function App() {
-  const [tab, setTab] = useState<"learn" | "live">("learn");
+  const [tab, setTab] = useState<"learn" | "replay" | "live">("learn");
   const [health, setHealth] = useState<Health | null>(null);
   const [symbol, setSymbol] = useState(SYMBOLS[0]);
   const [day, setDay] = useState(lastLondonSessionDay);
@@ -141,7 +142,7 @@ export function App() {
   }
 
   useEffect(() => {
-    if (tab === "learn") loadDay();
+    if (tab === "learn" || tab === "replay") void loadDay();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
@@ -168,6 +169,13 @@ export function App() {
               onClick={() => setTab("learn")}
             >
               Learn
+            </button>
+            <button
+              type="button"
+              className={tab === "replay" ? "active" : ""}
+              onClick={() => setTab("replay")}
+            >
+              Replay
             </button>
             <button
               type="button"
@@ -350,6 +358,73 @@ export function App() {
               </details>
             )}
           </div>
+        </div>
+      )}
+
+      {tab === "replay" && (
+        <div className="stack">
+          <div className="card controls">
+            <div className="row">
+              <label className="field">
+                Stock
+                <select
+                  className="select"
+                  value={symbol}
+                  onChange={(e) => setSymbol(e.target.value)}
+                >
+                  {SYMBOLS.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                Day (London)
+                <input
+                  type="date"
+                  value={day}
+                  onChange={(e) => setDay(e.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void loadDay()}
+              >
+                {busy ? "Loading…" : "Load day"}
+              </button>
+            </div>
+            <p className="meta">
+              Simulator uses the same detector levels as Learn, but only reveals
+              them when that bar arrives — no end-of-day peeking.
+            </p>
+          </div>
+          {chart && chart.candles.length > 0 ? (
+            <DayReplay
+              symbol={symbol}
+              day={chart.day}
+              candles={chart.candles}
+              patterns={chart.patterns}
+            />
+          ) : (
+            <div className="card">
+              <p className="empty">
+                {busy
+                  ? "Loading session…"
+                  : "Load a London weekday with candles to simulate."}
+              </p>
+              {chart?.suggested_day && (
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => void loadDay(chart.suggested_day!)}
+                >
+                  Load latest ({chart.suggested_day})
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

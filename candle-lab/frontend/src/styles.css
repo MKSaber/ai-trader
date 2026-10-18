@@ -152,6 +152,19 @@ button.tool:disabled {
   line-height: 1.4;
 }
 
+.banner.info {
+  background: var(--blue-soft);
+  color: #003d82;
+  border: 1px solid rgba(0, 113, 227, 0.2);
+}
+
+.banner.info strong {
+  color: #002a5c;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .banner.warn {
   background: var(--amber-soft);
   color: #5c3d00;
@@ -479,6 +492,25 @@ pre.mono {
   color: var(--secondary);
   font-size: 0.8rem;
   font-weight: 500;
+}
+
+.speed-seg {
+  margin: 0;
+}
+
+.replay-progress {
+  margin-top: 1rem;
+  height: 6px;
+  border-radius: 980px;
+  background: rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.replay-bar {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 980px;
+  transition: width 0.15s var(--ease);
 }
 
 @media (max-width: 640px) {
