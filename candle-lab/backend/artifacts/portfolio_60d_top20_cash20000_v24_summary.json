@@ -1,0 +1,650 @@
+{
+  "detector_version": "patterns-v1",
+  "trade_rules_version": "trade-rules-v2.4",
+  "trade_rules_label": "60m golden: engulfing-only, RR=6, hour 15, cooloff, max 2 stops/symbol, risk 1.5%/pos 35%, drag-name blocklist",
+  "interval": "60m",
+  "cost_profile": "trading212",
+  "days_requested": 60,
+  "symbols": [
+    "HSBA.L",
+    "SHEL.L",
+    "AZN.L",
+    "RR.L",
+    "RIO.L",
+    "ULVR.L",
+    "BATS.L",
+    "BP.L",
+    "GSK.L",
+    "GLEN.L",
+    "NG.L",
+    "LLOY.L",
+    "BA.L",
+    "BARC.L",
+    "CPG.L",
+    "NWG.L",
+    "REL.L",
+    "STAN.L",
+    "AAL.L",
+    "LSEG.L"
+  ],
+  "symbols_with_data": [
+    "HSBA.L",
+    "SHEL.L",
+    "AZN.L",
+    "RR.L",
+    "RIO.L",
+    "ULVR.L",
+    "BATS.L",
+    "BP.L",
+    "GSK.L",
+    "GLEN.L",
+    "NG.L",
+    "LLOY.L",
+    "BA.L",
+    "BARC.L",
+    "CPG.L",
+    "NWG.L",
+    "REL.L",
+    "STAN.L",
+    "AAL.L",
+    "LSEG.L"
+  ],
+  "feed": [
+    {
+      "symbol": "HSBA.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "SHEL.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "AZN.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "RR.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "RIO.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "ULVR.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "BATS.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "BP.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "GSK.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "GLEN.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "NG.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "LLOY.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "BA.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "BARC.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "CPG.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "NWG.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "REL.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "STAN.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "AAL.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    },
+    {
+      "symbol": "LSEG.L",
+      "healthy": true,
+      "bars": 540,
+      "days": 60,
+      "first": "2026-07-24 07:00:00+00:00",
+      "last": "2026-10-16 15:00:00+00:00"
+    }
+  ],
+  "playbook": "candle-lab/IG_PLAYBOOK.md",
+  "starting_cash_gbp": 20000.0,
+  "final_cash_gbp": 20686.12,
+  "realized_pnl_gbp": 686.12,
+  "return_pct": 3.4306,
+  "trade_count": 11,
+  "wins": 3,
+  "losses": 8,
+  "pattern_totals": {
+    "bearish_engulfing": 735,
+    "bullish_engulfing": 697,
+    "hammer": 102,
+    "shooting_star": 71
+  },
+  "pnl_by_symbol": {
+    "AAL.L": -103.49,
+    "AZN.L": -53.57,
+    "BATS.L": 299.23,
+    "BP.L": -151.04,
+    "CPG.L": -106.84,
+    "GLEN.L": 442.31,
+    "HSBA.L": -56.23,
+    "NG.L": -41.91,
+    "REL.L": -66.08,
+    "SHEL.L": 523.75
+  },
+  "trades": [
+    {
+      "symbol": "BP.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-08-03T14:00:00+00:00",
+      "entry_trigger": 548.0738877868652,
+      "stop": 533.5330877990723,
+      "target": 635.3186877136224,
+      "status": "closed",
+      "qty": 8.273714599310228,
+      "entry_price": 548.3205210363693,
+      "exit_price": 533.2929979095627,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -151.0437
+    },
+    {
+      "symbol": "AAL.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-08-10T14:00:00+00:00",
+      "entry_trigger": 4033.0155,
+      "stop": 3949.0245000000004,
+      "target": 4536.961499999998,
+      "status": "closed",
+      "qty": 0.7202051535887867,
+      "entry_price": 4034.830356975,
+      "exit_price": 3947.2474389750005,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -80.1941
+    },
+    {
+      "symbol": "HSBA.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-09-09T14:00:00+00:00",
+      "entry_trigger": 1548.1737244262695,
+      "stop": 1529.4349732055664,
+      "target": 1660.606231750488,
+      "status": "closed",
+      "qty": 1.856792743787989,
+      "entry_price": 1549.8970911499025,
+      "exit_price": 1528.746727467624,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -56.2334
+    },
+    {
+      "symbol": "AZN.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-09-22T14:00:00+00:00",
+      "entry_trigger": 12664.329,
+      "stop": 12383.805,
+      "target": 14347.472999999996,
+      "status": "closed",
+      "qty": 0.14619931865936495,
+      "entry_price": 12670.027948050001,
+      "exit_price": 12378.232287750001,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -53.57
+    },
+    {
+      "symbol": "CPG.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-09-18T14:00:00+00:00",
+      "entry_trigger": 30.36517538166046,
+      "stop": 29.435273856163025,
+      "target": 35.944584534645074,
+      "status": "closed",
+      "qty": 94.08377691779567,
+      "entry_price": 30.37883971058221,
+      "exit_price": 29.422027982927755,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -106.8431
+    },
+    {
+      "symbol": "REL.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-09-25T14:00:00+00:00",
+      "entry_trigger": 2529.2639999999997,
+      "stop": 2486.7560000000003,
+      "target": 2784.311999999996,
+      "status": "closed",
+      "qty": 1.1073383672592285,
+      "entry_price": 2530.4021688,
+      "exit_price": 2485.6369598000006,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -66.0798
+    },
+    {
+      "symbol": "NG.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-10-05T14:00:00+00:00",
+      "entry_trigger": 1152.07575,
+      "stop": 1136.93125,
+      "target": 1242.9427499999993,
+      "status": "closed",
+      "qty": 1.5572348330535102,
+      "entry_price": 1156.5202000000002,
+      "exit_price": 1136.4196309375002,
+      "exit_reason": "stop_loss",
+      "ambiguous": false,
+      "pnl_gbp": -41.913
+    },
+    {
+      "symbol": "SHEL.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-08-06T14:00:00+00:00",
+      "entry_trigger": 3309.654,
+      "stop": 3241.3785000000003,
+      "target": 3719.3069999999984,
+      "status": "closed",
+      "qty": 1.3541492276459575,
+      "entry_price": 3311.1433443,
+      "exit_price": 3717.633311849999,
+      "exit_reason": "take_profit",
+      "ambiguous": false,
+      "pnl_gbp": 523.7461
+    },
+    {
+      "symbol": "GLEN.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-07-31T14:00:00+00:00",
+      "entry_trigger": 545.4726122131348,
+      "stop": 524.1377633972169,
+      "target": 673.4817051086421,
+      "status": "closed",
+      "qty": 12.827136065501495,
+      "entry_price": 545.7180748886307,
+      "exit_price": 583.4373472015382,
+      "exit_reason": "end_of_series",
+      "ambiguous": false,
+      "pnl_gbp": 442.3125
+    },
+    {
+      "symbol": "BATS.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-10-05T14:00:00+00:00",
+      "entry_trigger": 4004.0009999999997,
+      "stop": 3908.045,
+      "target": 4579.736999999997,
+      "status": "closed",
+      "qty": 0.6937144978401728,
+      "entry_price": 4005.80280045,
+      "exit_price": 4460.99165,
+      "exit_reason": "end_of_series",
+      "ambiguous": false,
+      "pnl_gbp": 299.2336
+    },
+    {
+      "symbol": "AAL.L",
+      "pattern": "bullish_engulfing",
+      "confirm_ts": "2026-10-15T14:00:00+00:00",
+      "entry_trigger": 4072.035,
+      "stop": 3808.0950000000003,
+      "target": 5655.674999999997,
+      "status": "closed",
+      "qty": 0.5720509351065276,
+      "entry_price": 4073.86741575,
+      "exit_price": 4057.1734500000002,
+      "exit_reason": "end_of_series",
+      "ambiguous": false,
+      "pnl_gbp": -23.2952
+    }
+  ],
+  "equity_curve_tail": [
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20694.64
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T14:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20740.82
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20723.66
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20723.66
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20723.66
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20723.66
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20728.52
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20728.52
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20728.52
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    },
+    {
+      "ts": "2026-10-16T15:00:00+00:00",
+      "cash": 7792.53,
+      "open_positions": 3,
+      "equity": 20697.73
+    }
+  ],
+  "disclaimer": "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules and Trading 212 / GOV.UK costs. Not live broker execution. v2.4 golden unified formula (RR=6 + blocklist + static 1.5%/35%) \u2014 one profile for all books; research only."
+}

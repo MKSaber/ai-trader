@@ -85,10 +85,15 @@ def simulate_portfolio(
     day_trade_counts: dict[tuple[str, object], int] = {}
     trades: list[dict] = []
     equity_curve: list[dict] = []
-    # v2.2 risk controls
+    # v2.2 / v2.3 risk controls (max stops may scale with book size)
     cooloff_sym: set[str] = set()  # skip next signal after a stop
     stop_counts: dict[str, int] = defaultdict(int)
     initial_stop: dict[str, float] = {}
+    max_stops_limit = (
+        rules.max_stops_for_cash(starting_cash)
+        if hasattr(rules, "max_stops_for_cash")
+        else getattr(rules, "max_stops_per_symbol", None)
+    )
 
     last_close: dict[str, float] = {}
 
@@ -157,6 +162,8 @@ def simulate_portfolio(
                 break
             if det.direction != "up" or det.pattern not in rules.bullish_set:
                 continue
+            if sym in getattr(rules, "blocklist_set", set()):
+                continue
             if (
                 rules.trade_hours_london is not None
                 and local.hour not in rules.trade_hours_london
@@ -172,8 +179,7 @@ def simulate_portfolio(
                 # Consume cooloff: skip this signal, allow later ones
                 cooloff_sym.discard(sym)
                 continue
-            max_stops = getattr(rules, "max_stops_per_symbol", None)
-            if max_stops is not None and stop_counts[sym] >= max_stops:
+            if max_stops_limit is not None and stop_counts[sym] >= max_stops_limit:
                 continue
             if rules.require_downtrend and not in_downtrend(df, i):
                 continue
@@ -298,7 +304,7 @@ def main() -> int:
     parser.add_argument("--cash", type=float, default=20_000.0)
     parser.add_argument("--symbols", default=DEFAULT_SYMBOLS)
     parser.add_argument("--broker", default="trading212", choices=sorted(BROKER_PROFILES))
-    parser.add_argument("--rules", default="trade-rules-v2.2")
+    parser.add_argument("--rules", default="trade-rules-v2.4")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -308,13 +314,14 @@ def main() -> int:
         Settings(starting_cash_gbp=args.cash),
         args.broker,
     )
+    risk_frac, max_position_frac = rules.sizing_for_cash(args.cash)
     settings = settings.model_copy(
         update={
             "trade_rules_version": rules.version,
             "reward_risk": rules.reward_risk,
             "setup_expiry_bars": rules.setup_expiry_bars,
-            "max_position_frac": rules.max_position_frac,
-            "risk_frac": rules.risk_frac,
+            "max_position_frac": max_position_frac,
+            "risk_frac": risk_frac,
         }
     )
 
@@ -357,7 +364,8 @@ def main() -> int:
         "disclaimer": (
             "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules "
             "and Trading 212 / GOV.UK costs. Not live broker execution. "
-            "v2.2 stay-green levers were tuned on the top-10 / 60d book — research only."
+            "v2.4 golden unified formula (RR=6 + blocklist + static 1.5%/35%) "
+            "— one profile for all books; research only."
         ),
     }
 
