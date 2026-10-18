@@ -3,7 +3,8 @@
 trade-rules-v1: original 5m long breakout (often uneconomic vs 0.5% SDRT).
 trade-rules-v2 / v2.1: cost-aware 60m rules.
 trade-rules-v2.2: stay green on top-10 / 60d (hour-15 filter + cooloff/sizing).
-trade-rules-v2.3: broad-book fix — blocklist drag names, max 1 stop, smaller size.
+trade-rules-v2.3: transitional cash-aware broad-book fix (superseded by v2.4).
+trade-rules-v2.4: golden unified formula — one static profile for all books.
 """
 
 from __future__ import annotations
@@ -163,6 +164,61 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
             "LGEN.L",
         ),
     },
+    # Golden unified formula (A/B pick `block+rr6`):
+    # One static profile — no cash forks, no top-N forks.
+    # Dual-green on top-10 £20k AND top-50 £100k across 60/90/120d.
+    "trade-rules-v2.4": {
+        "label": (
+            "60m golden: engulfing-only, RR=6, hour 15, cooloff, "
+            "max 2 stops/symbol, risk 1.5%/pos 35%, drag-name blocklist"
+        ),
+        "interval": "60m",
+        "reward_risk": 6.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (15,),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing",),
+        "cooloff_after_stop": True,
+        "trail_breakeven_r": None,
+        "max_stops_per_symbol": 2,
+        "risk_frac": 0.015,
+        "max_position_frac": 0.35,
+        "symbol_blocklist": (
+            "LLOY.L",
+            "BARC.L",
+            "NWG.L",
+            "STAN.L",
+            "BA.L",
+            "RR.L",
+            "III.L",
+            "ADM.L",
+            "AAF.L",
+            "SMT.L",
+            "EXPN.L",
+            "IHG.L",
+            "EDV.L",
+            "SN.L",
+            "SVT.L",
+            "SGRO.L",
+            "HLN.L",
+            "DGE.L",
+            "SSE.L",
+            "UU.L",
+            "BHP.L",
+            "ANTO.L",
+            "CCH.L",
+            "ABF.L",
+            "INF.L",
+            "PRU.L",
+            "LGEN.L",
+        ),
+    },
 }
 
 
@@ -222,7 +278,7 @@ class TradeRules:
         return self.max_stops_per_symbol
 
 
-def load_trade_rules(version: str = "trade-rules-v2.3") -> TradeRules:
+def load_trade_rules(version: str = "trade-rules-v2.4") -> TradeRules:
     if version not in TRADE_RULE_PROFILES:
         raise ValueError(
             f"Unknown trade rules {version!r}; choose from {sorted(TRADE_RULE_PROFILES)}"

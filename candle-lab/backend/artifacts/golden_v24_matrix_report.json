@@ -1,0 +1,22 @@
+{
+  "formula": "trade-rules-v2.4",
+  "pick": "block+rr6",
+  "static": {
+    "hours": [15],
+    "reward_risk": 6.0,
+    "cooloff_after_stop": true,
+    "max_stops_per_symbol": 2,
+    "risk_frac": 0.015,
+    "max_position_frac": 0.35,
+    "cash_forks": false,
+    "universe_forks": false
+  },
+  "matrix_all_green": {
+    "top10_20k": {"60d": 659.53, "90d": 1453.36, "120d": 922.36},
+    "top20_20k": {"60d": 686.12, "90d": 1414.03, "120d": 750.69},
+    "top50_100k": {"60d": 4189.84, "90d": 14575.68, "120d": 8393.49},
+    "top50_20k": {"60d": 842.29, "90d": 2930.02, "120d": 1700.9},
+    "top10_100k": {"60d": 3276.32, "90d": 7226.23, "120d": 4561.33}
+  },
+  "note": "15/15 cells green under one static profile. A/B artifact: ab_golden_unify.json"
+}

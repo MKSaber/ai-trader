@@ -304,7 +304,7 @@ def main() -> int:
     parser.add_argument("--cash", type=float, default=20_000.0)
     parser.add_argument("--symbols", default=DEFAULT_SYMBOLS)
     parser.add_argument("--broker", default="trading212", choices=sorted(BROKER_PROFILES))
-    parser.add_argument("--rules", default="trade-rules-v2.3")
+    parser.add_argument("--rules", default="trade-rules-v2.4")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -364,8 +364,8 @@ def main() -> int:
         "disclaimer": (
             "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules "
             "and Trading 212 / GOV.UK costs. Not live broker execution. "
-            "v2.3 broad-book levers (blocklist + smaller size + max 1 stop) "
-            "address top-50 / £100k root causes — research only."
+            "v2.4 golden unified formula (RR=6 + blocklist + static 1.5%/35%) "
+            "— one profile for all books; research only."
         ),
     }
 
