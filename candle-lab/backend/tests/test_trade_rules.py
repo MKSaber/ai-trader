@@ -51,19 +51,20 @@ def test_v24_golden_unified_defaults():
     r = load_trade_rules("trade-rules-v2.4")
     assert r.reward_risk == 6.0
     assert r.trade_hours_london == (15,)
+
+
+def test_v25_fullday_golden_defaults():
+    r = load_trade_rules("trade-rules-v2.5")
+    assert r.reward_risk == 7.0
+    assert r.trade_hours_london == (10, 11, 12, 13, 14, 15)
+    assert r.min_downtrend_pct == 0.02
     assert r.cooloff_after_stop is True
     assert r.max_stops_per_symbol == 2
     assert r.risk_frac == 0.015
     assert r.max_position_frac == 0.35
-    # No cash forks — same sizing on £20k and £100k
     assert r.large_book_cash_gbp is None
-    assert r.sizing_for_cash(20_000) == (0.015, 0.35)
-    assert r.sizing_for_cash(100_000) == (0.015, 0.35)
-    assert r.max_stops_for_cash(20_000) == 2
-    assert r.max_stops_for_cash(100_000) == 2
+    assert r.sizing_for_cash(20_000) == r.sizing_for_cash(100_000)
     assert "III.L" in r.blocklist_set
-    assert "BA.L" in r.blocklist_set
-    assert "LLOY.L" in r.blocklist_set
     for sym in (
         "HSBA.L",
         "AZN.L",

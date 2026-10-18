@@ -44,6 +44,19 @@ def in_downtrend(df: pd.DataFrame, i: int) -> bool:
     return float(df.iloc[j]["close"]) < float(df.iloc[k]["close"])
 
 
+def downtrend_depth_pct(df: pd.DataFrame, i: int, lookback: int = TREND_LOOKBACK) -> float:
+    """Fraction the prior close has fallen over `lookback` bars (0 if flat/up)."""
+    j = i - 1
+    k = j - lookback
+    if k < 0:
+        return 0.0
+    c0 = float(df.iloc[k]["close"])
+    c1 = float(df.iloc[j]["close"])
+    if c0 <= 0:
+        return 0.0
+    return max(0.0, (c0 - c1) / c0)
+
+
 def in_uptrend(df: pd.DataFrame, i: int) -> bool:
     """True if close of bar i-1 is above close of bar i-1-TREND_LOOKBACK."""
     j = i - 1
