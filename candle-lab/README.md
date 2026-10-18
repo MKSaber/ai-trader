@@ -48,6 +48,19 @@ port 3100) — it does not call Pattern Lab `/api` research endpoints.
 cd candle-lab/backend && . .venv/bin/activate && pytest -q
 ```
 
+## 20-day paper backtest (pattern detector only)
+
+Replays delayed Yahoo 5m bars for the last N LSE trading days, detects
+`patterns-v1` signals, and paper-trades long setups with `trade-rules-v1`
+(costs include spread, slippage, commission, UK stamp duty):
+
+```bash
+cd candle-lab/backend && . .venv/bin/activate
+python scripts/backtest_20d.py --days 20 \
+  --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
+# writes artifacts/backtest_20d_report.json
+```
+
 ## What was verified now vs later
 
 - **Now:** unit tests for pattern boundaries, ambiguous exits, detector stability;
