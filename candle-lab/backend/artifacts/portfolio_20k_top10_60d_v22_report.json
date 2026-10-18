@@ -1,0 +1,58 @@
+{
+  "days": 60,
+  "starting_cash_gbp": 20000,
+  "universe": [
+    "HSBA.L",
+    "AZN.L",
+    "SHEL.L",
+    "RIO.L",
+    "BATS.L",
+    "ULVR.L",
+    "BP.L",
+    "GSK.L",
+    "NG.L",
+    "REL.L"
+  ],
+  "pick": "h15+cooloff+max2+risk1.5+maxpos35",
+  "root_cause_v21_60d": {
+    "h1_pnl_gbp": -797,
+    "h2_pnl_gbp": 483,
+    "stops_vs_tps": "35 stops (~-£2.2k) vs 4 TPs",
+    "drags": ["AZN.L", "GSK.L"],
+    "rejected_levers": [
+      "min_stop 1.5% (0 trades with hours 11/15)",
+      "trail BE at 1R (hurt 60d)",
+      "hours (11,15) as primary window"
+    ]
+  },
+  "v2.1": {
+    "pnl_gbp": -314.19,
+    "return_pct": -1.5709,
+    "trades": 48,
+    "wins": 13,
+    "losses": 35
+  },
+  "v2.2": {
+    "final_cash_gbp": 20620.08,
+    "pnl_gbp": 620.08,
+    "return_pct": 3.1004,
+    "trades": 7,
+    "wins": 2,
+    "losses": 5,
+    "pnl_by_symbol": {
+      "AZN.L": -205.93,
+      "BATS.L": 752.74,
+      "BP.L": -233.06,
+      "HSBA.L": -87.61,
+      "NG.L": -105.43,
+      "REL.L": -166.23,
+      "SHEL.L": 665.61
+    }
+  },
+  "retest_windows_v22": {
+    "60d_pnl": 620.08,
+    "30d_pnl": 131.85,
+    "20d_pnl": 271.22,
+    "note": "Dual-+ve lock: green on 60d and 30d (also 20d)."
+  }
+}

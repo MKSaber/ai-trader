@@ -26,6 +26,20 @@ def test_v21_profit_tuned_defaults():
     assert "hammer" not in r.bullish_set
 
 
+def test_v22_stay_green_defaults():
+    r = load_trade_rules("trade-rules-v2.2")
+    assert r.interval == "60m"
+    assert r.reward_risk == 5.0
+    assert r.bullish_patterns == ("bullish_engulfing",)
+    assert r.trade_hours_london == (15,)
+    assert r.cooloff_after_stop is True
+    assert r.max_stops_per_symbol == 2
+    assert r.trail_breakeven_r is None
+    assert r.min_stop_pct == 0.003
+    assert r.risk_frac == 0.015
+    assert r.max_position_frac == 0.35
+
+
 def test_stop_pad_widens_stop():
     entry, stop, target = setup_levels(
         high=110,

@@ -1,7 +1,8 @@
 """Versioned paper trade rules for candle-lab.
 
 trade-rules-v1: original 5m long breakout (often uneconomic vs 0.5% SDRT).
-trade-rules-v2: cost-aware 60m rules that cleared +P&L on a 10d T212 scan.
+trade-rules-v2 / v2.1: cost-aware 60m rules.
+trade-rules-v2.2: stay green on top-10 / 60d (hour-15 filter + cooloff/sizing).
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
         "min_stop_pct": 0.0,
         "stop_pad_ranges": 0.0,
         "require_downtrend": False,
-        "trade_hours_london": None,  # any session hour
+        "trade_hours_london": None,
         "max_trades_per_day": None,
         "exit_on_bearish": True,
         "session_flat": True,
@@ -43,9 +44,9 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
         "session_flat": False,
         "cost_gate": True,
         "bullish_patterns": ("bullish_engulfing", "hammer"),
+        "risk_frac": 0.01,
+        "max_position_frac": 0.25,
     },
-    # Profit lift on top-10 / 30d £20k book: drop hammers (net loser),
-    # skip weak London hours 10 & 13, raise RR to 5.
     "trade-rules-v2.1": {
         "label": (
             "60m profit-tuned: engulfing-only, RR=5, stop pad 1R, downtrend, "
@@ -63,6 +64,36 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
         "session_flat": False,
         "cost_gate": True,
         "bullish_patterns": ("bullish_engulfing",),
+        "risk_frac": 0.01,
+        "max_position_frac": 0.25,
+    },
+    # Root-cause fixes for 60d top-10 drawdown (v2.1 was −£314 / 60d):
+    # - H1 losses clustered on hours 11/12/14; hour 15 alone stayed dual-+ve
+    # - stop-outs re-entered (cooloff + max 2 stops/symbol)
+    # - sizing: risk 1.5% / max pos 35% so 5R clears SDRT without overtrading
+    # Rejected levers: min_stop 1.5% (0 trades with hours 11/15), trail BE (hurt 60d)
+    "trade-rules-v2.2": {
+        "label": (
+            "60m stay-green: engulfing-only, RR=5, pad 1R, hour 15 only, "
+            "cooloff after stop, max 2 stops/symbol, risk 1.5%/pos 35%"
+        ),
+        "interval": "60m",
+        "reward_risk": 5.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (15,),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing",),
+        "cooloff_after_stop": True,
+        "trail_breakeven_r": None,
+        "max_stops_per_symbol": 2,
+        "risk_frac": 0.015,
+        "max_position_frac": 0.35,
     },
 }
 
@@ -83,13 +114,18 @@ class TradeRules:
     session_flat: bool
     cost_gate: bool
     bullish_patterns: tuple[str, ...]
+    cooloff_after_stop: bool = False
+    trail_breakeven_r: float | None = None
+    max_stops_per_symbol: int | None = None
+    risk_frac: float = 0.01
+    max_position_frac: float = 0.25
 
     @property
     def bullish_set(self) -> set[str]:
         return set(self.bullish_patterns)
 
 
-def load_trade_rules(version: str = "trade-rules-v2") -> TradeRules:
+def load_trade_rules(version: str = "trade-rules-v2.2") -> TradeRules:
     if version not in TRADE_RULE_PROFILES:
         raise ValueError(
             f"Unknown trade rules {version!r}; choose from {sorted(TRADE_RULE_PROFILES)}"
@@ -111,6 +147,15 @@ def load_trade_rules(version: str = "trade-rules-v2") -> TradeRules:
         session_flat=bool(raw["session_flat"]),
         cost_gate=bool(raw["cost_gate"]),
         bullish_patterns=tuple(raw["bullish_patterns"]),
+        cooloff_after_stop=bool(raw.get("cooloff_after_stop", False)),
+        trail_breakeven_r=(
+            float(raw["trail_breakeven_r"])
+            if raw.get("trail_breakeven_r") is not None
+            else None
+        ),
+        max_stops_per_symbol=raw.get("max_stops_per_symbol"),
+        risk_frac=float(raw.get("risk_frac", 0.01)),
+        max_position_frac=float(raw.get("max_position_frac", 0.25)),
     )
 
 
