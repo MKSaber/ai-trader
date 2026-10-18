@@ -398,15 +398,24 @@ def rolling(
     step_sessions: int = 5,
     max_folds: int | None = None,
     min_prob: float = 0.55,
-    fetch: bool = True,
+    long_only: bool = True,
+    execution_mode: str = "stop_tp_costs",
+    stamp_scenario: str = "stress_1pct",
+    purge_label_overlap: bool = True,
+    fetch: bool = False,
     lookback_days: int = 1825,
     symbols: str = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L",
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Rolling walk-forward: 85 train / 5 test, slide across history.
 
-    Also scores ATR stop/take-profit paper trades and returns recommendations.
+    Defaults: long-only, label purge on, stress 1% stamp, no refetch.
+    execution_mode: stop_tp_costs | oc_zero_cost | oc_with_costs
+    stamp_scenario: stress_1pct | sdrt_0_5pct
     """
+    allowed_modes = {"stop_tp_costs", "oc_zero_cost", "oc_with_costs"}
+    if execution_mode not in allowed_modes:
+        raise HTTPException(400, f"execution_mode must be one of {allowed_modes}")
     syms = [s.strip() for s in symbols.split(",") if s.strip()]
     fetch_info = None
     if fetch:
@@ -421,6 +430,10 @@ def rolling(
             step_sessions=max(1, step_sessions),
             max_folds=max_folds,
             min_prob=min_prob,
+            long_only=long_only,
+            execution_mode=execution_mode,
+            stamp_scenario=stamp_scenario,
+            purge_label_overlap=purge_label_overlap,
         )
     except Exception as exc:  # noqa: BLE001
         db.rollback()

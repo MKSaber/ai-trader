@@ -1,0 +1,504 @@
+{
+  "generated_at": "live-api",
+  "runs": [
+    {
+      "execution_mode": "oc_zero_cost",
+      "stamp_scenario": "stress_1pct",
+      "protocol": {
+        "train_sessions": 85,
+        "test_sessions": 5,
+        "step_sessions": 5,
+        "folds": 40,
+        "min_prob": 0.55,
+        "long_only": true,
+        "execution_mode": "oc_zero_cost",
+        "stamp_scenario": "stress_1pct",
+        "purge_label_overlap": true,
+        "purged_train_rows": 200,
+        "period_start": "2021-11-16",
+        "period_end": "2023-01-05",
+        "costs": {
+          "commission_bps": 5.0,
+          "spread_bps": 10.0,
+          "slippage_bps": 5.0,
+          "stamp_duty_rate": 0.01,
+          "stamp_scenario": "stress_1pct"
+        }
+      },
+      "models": [
+        {
+          "model_type": "naive",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "naive_const_p",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "ridge",
+          "mean_accuracy": 0.499,
+          "std_accuracy": 0.12553485571744608,
+          "folds": 40,
+          "accuracy": 0.499,
+          "n": 1000
+        },
+        {
+          "model_type": "logistic",
+          "mean_accuracy": 0.495,
+          "std_accuracy": 0.12022894826122368,
+          "folds": 40,
+          "accuracy": 0.495,
+          "n": 1000
+        },
+        {
+          "model_type": "lightgbm",
+          "mean_accuracy": 0.516,
+          "std_accuracy": 0.11926441212700462,
+          "folds": 40,
+          "accuracy": 0.516,
+          "n": 1000
+        }
+      ],
+      "direction_success": {
+        "passed": false,
+        "best_model": "lightgbm",
+        "best_accuracy": 0.516,
+        "naive_accuracy": 0.501,
+        "n_test": 200,
+        "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (50.1%)",
+        "reason": "did_not_beat_chance_threshold",
+        "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+      },
+      "trading": {
+        "n_trades": 355,
+        "win_rate": 0.49295774647887325,
+        "sum_gross_return": 0.26541914026671076,
+        "sum_net_return": 0.26541914026671076,
+        "avg_gross_return": 0.0007476595500470726,
+        "avg_net_return": 0.0007476595500470726,
+        "exit_reasons": {
+          "session_close": 355
+        },
+        "passed": false,
+        "criterion": "Directional gate passed AND >=10 trades AND cash equity compounded return > 0 (execution_mode=oc_zero_cost, long_only=True)"
+      },
+      "equity_curve": {
+        "starting_cash": 100000.0,
+        "ending_equity": 100530.96732398537,
+        "compounded_return": 0.005309673239853652,
+        "max_drawdown": 0.005999908352701066,
+        "n_funded_trades": 355,
+        "notional_frac": 0.02,
+        "note": "Non-overlapping fixed-fraction sizing; sum of fractional trade returns is NOT portfolio growth \u2014 this curve is."
+      }
+    },
+    {
+      "execution_mode": "oc_with_costs",
+      "stamp_scenario": "stress_1pct",
+      "protocol": {
+        "train_sessions": 85,
+        "test_sessions": 5,
+        "step_sessions": 5,
+        "folds": 40,
+        "min_prob": 0.55,
+        "long_only": true,
+        "execution_mode": "oc_with_costs",
+        "stamp_scenario": "stress_1pct",
+        "purge_label_overlap": true,
+        "purged_train_rows": 200,
+        "period_start": "2021-11-16",
+        "period_end": "2023-01-05",
+        "costs": {
+          "commission_bps": 5.0,
+          "spread_bps": 10.0,
+          "slippage_bps": 5.0,
+          "stamp_duty_rate": 0.01,
+          "stamp_scenario": "stress_1pct"
+        }
+      },
+      "models": [
+        {
+          "model_type": "naive",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "naive_const_p",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "ridge",
+          "mean_accuracy": 0.499,
+          "std_accuracy": 0.12553485571744608,
+          "folds": 40,
+          "accuracy": 0.499,
+          "n": 1000
+        },
+        {
+          "model_type": "logistic",
+          "mean_accuracy": 0.495,
+          "std_accuracy": 0.12022894826122368,
+          "folds": 40,
+          "accuracy": 0.495,
+          "n": 1000
+        },
+        {
+          "model_type": "lightgbm",
+          "mean_accuracy": 0.516,
+          "std_accuracy": 0.11926441212700462,
+          "folds": 40,
+          "accuracy": 0.516,
+          "n": 1000
+        }
+      ],
+      "direction_success": {
+        "passed": false,
+        "best_model": "lightgbm",
+        "best_accuracy": 0.516,
+        "naive_accuracy": 0.501,
+        "n_test": 200,
+        "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (50.1%)",
+        "reason": "did_not_beat_chance_threshold",
+        "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+      },
+      "trading": {
+        "n_trades": 355,
+        "win_rate": 0.16338028169014085,
+        "sum_gross_return": 0.26541914026671076,
+        "sum_net_return": -4.704580859733289,
+        "avg_gross_return": 0.0007476595500470726,
+        "avg_net_return": -0.013252340449952927,
+        "exit_reasons": {
+          "session_close": 355
+        },
+        "passed": false,
+        "criterion": "Directional gate passed AND >=10 trades AND cash equity compounded return > 0 (execution_mode=oc_with_costs, long_only=True)"
+      },
+      "equity_curve": {
+        "starting_cash": 100000.0,
+        "ending_equity": 91017.64361765227,
+        "compounded_return": -0.08982356382347734,
+        "max_drawdown": 0.09014450377320554,
+        "n_funded_trades": 355,
+        "notional_frac": 0.02,
+        "note": "Non-overlapping fixed-fraction sizing; sum of fractional trade returns is NOT portfolio growth \u2014 this curve is."
+      }
+    },
+    {
+      "execution_mode": "oc_with_costs",
+      "stamp_scenario": "sdrt_0_5pct",
+      "protocol": {
+        "train_sessions": 85,
+        "test_sessions": 5,
+        "step_sessions": 5,
+        "folds": 40,
+        "min_prob": 0.55,
+        "long_only": true,
+        "execution_mode": "oc_with_costs",
+        "stamp_scenario": "sdrt_0_5pct",
+        "purge_label_overlap": true,
+        "purged_train_rows": 200,
+        "period_start": "2021-11-16",
+        "period_end": "2023-01-05",
+        "costs": {
+          "commission_bps": 5.0,
+          "spread_bps": 10.0,
+          "slippage_bps": 5.0,
+          "stamp_duty_rate": 0.005,
+          "stamp_scenario": "sdrt_0_5pct"
+        }
+      },
+      "models": [
+        {
+          "model_type": "naive",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "naive_const_p",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "ridge",
+          "mean_accuracy": 0.499,
+          "std_accuracy": 0.12553485571744608,
+          "folds": 40,
+          "accuracy": 0.499,
+          "n": 1000
+        },
+        {
+          "model_type": "logistic",
+          "mean_accuracy": 0.495,
+          "std_accuracy": 0.12022894826122368,
+          "folds": 40,
+          "accuracy": 0.495,
+          "n": 1000
+        },
+        {
+          "model_type": "lightgbm",
+          "mean_accuracy": 0.516,
+          "std_accuracy": 0.11926441212700462,
+          "folds": 40,
+          "accuracy": 0.516,
+          "n": 1000
+        }
+      ],
+      "direction_success": {
+        "passed": false,
+        "best_model": "lightgbm",
+        "best_accuracy": 0.516,
+        "naive_accuracy": 0.501,
+        "n_test": 200,
+        "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (50.1%)",
+        "reason": "did_not_beat_chance_threshold",
+        "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+      },
+      "trading": {
+        "n_trades": 355,
+        "win_rate": 0.2676056338028169,
+        "sum_gross_return": 0.26541914026671076,
+        "sum_net_return": -2.9295808597332895,
+        "avg_gross_return": 0.0007476595500470726,
+        "avg_net_return": -0.008252340449952928,
+        "exit_reasons": {
+          "session_close": 355
+        },
+        "passed": false,
+        "criterion": "Directional gate passed AND >=10 trades AND cash equity compounded return > 0 (execution_mode=oc_with_costs, long_only=True)"
+      },
+      "equity_curve": {
+        "starting_cash": 100000.0,
+        "ending_equity": 94307.52754999093,
+        "compounded_return": -0.05692472450009067,
+        "max_drawdown": 0.05735149661618941,
+        "n_funded_trades": 355,
+        "notional_frac": 0.02,
+        "note": "Non-overlapping fixed-fraction sizing; sum of fractional trade returns is NOT portfolio growth \u2014 this curve is."
+      }
+    },
+    {
+      "execution_mode": "stop_tp_costs",
+      "stamp_scenario": "stress_1pct",
+      "protocol": {
+        "train_sessions": 85,
+        "test_sessions": 5,
+        "step_sessions": 5,
+        "folds": 40,
+        "min_prob": 0.55,
+        "long_only": true,
+        "execution_mode": "stop_tp_costs",
+        "stamp_scenario": "stress_1pct",
+        "purge_label_overlap": true,
+        "purged_train_rows": 200,
+        "period_start": "2021-11-16",
+        "period_end": "2023-01-05",
+        "costs": {
+          "commission_bps": 5.0,
+          "spread_bps": 10.0,
+          "slippage_bps": 5.0,
+          "stamp_duty_rate": 0.01,
+          "stamp_scenario": "stress_1pct"
+        }
+      },
+      "models": [
+        {
+          "model_type": "naive",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "naive_const_p",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "ridge",
+          "mean_accuracy": 0.499,
+          "std_accuracy": 0.12553485571744608,
+          "folds": 40,
+          "accuracy": 0.499,
+          "n": 1000
+        },
+        {
+          "model_type": "logistic",
+          "mean_accuracy": 0.495,
+          "std_accuracy": 0.12022894826122368,
+          "folds": 40,
+          "accuracy": 0.495,
+          "n": 1000
+        },
+        {
+          "model_type": "lightgbm",
+          "mean_accuracy": 0.516,
+          "std_accuracy": 0.11926441212700462,
+          "folds": 40,
+          "accuracy": 0.516,
+          "n": 1000
+        }
+      ],
+      "direction_success": {
+        "passed": false,
+        "best_model": "lightgbm",
+        "best_accuracy": 0.516,
+        "naive_accuracy": 0.501,
+        "n_test": 200,
+        "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (50.1%)",
+        "reason": "did_not_beat_chance_threshold",
+        "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+      },
+      "trading": {
+        "n_trades": 355,
+        "win_rate": 0.16338028169014085,
+        "sum_gross_return": 0.2680351472684468,
+        "sum_net_return": -4.701964852731553,
+        "avg_gross_return": 0.0007550285838547797,
+        "avg_net_return": -0.01324497141614522,
+        "exit_reasons": {
+          "session_close": 344,
+          "stop_loss": 9,
+          "take_profit": 2
+        },
+        "passed": false,
+        "criterion": "Directional gate passed AND >=10 trades AND cash equity compounded return > 0 (execution_mode=stop_tp_costs, long_only=True)"
+      },
+      "equity_curve": {
+        "starting_cash": 100000.0,
+        "ending_equity": 91022.40482301895,
+        "compounded_return": -0.08977595176981046,
+        "max_drawdown": 0.09009690850816289,
+        "n_funded_trades": 355,
+        "notional_frac": 0.02,
+        "note": "Non-overlapping fixed-fraction sizing; sum of fractional trade returns is NOT portfolio growth \u2014 this curve is."
+      }
+    },
+    {
+      "execution_mode": "stop_tp_costs",
+      "stamp_scenario": "sdrt_0_5pct",
+      "protocol": {
+        "train_sessions": 85,
+        "test_sessions": 5,
+        "step_sessions": 5,
+        "folds": 40,
+        "min_prob": 0.55,
+        "long_only": true,
+        "execution_mode": "stop_tp_costs",
+        "stamp_scenario": "sdrt_0_5pct",
+        "purge_label_overlap": true,
+        "purged_train_rows": 200,
+        "period_start": "2021-11-16",
+        "period_end": "2023-01-05",
+        "costs": {
+          "commission_bps": 5.0,
+          "spread_bps": 10.0,
+          "slippage_bps": 5.0,
+          "stamp_duty_rate": 0.005,
+          "stamp_scenario": "sdrt_0_5pct"
+        }
+      },
+      "models": [
+        {
+          "model_type": "naive",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "naive_const_p",
+          "mean_accuracy": 0.501,
+          "std_accuracy": 0.14696598245852677,
+          "folds": 40,
+          "accuracy": 0.501,
+          "n": 1000
+        },
+        {
+          "model_type": "ridge",
+          "mean_accuracy": 0.499,
+          "std_accuracy": 0.12553485571744608,
+          "folds": 40,
+          "accuracy": 0.499,
+          "n": 1000
+        },
+        {
+          "model_type": "logistic",
+          "mean_accuracy": 0.495,
+          "std_accuracy": 0.12022894826122368,
+          "folds": 40,
+          "accuracy": 0.495,
+          "n": 1000
+        },
+        {
+          "model_type": "lightgbm",
+          "mean_accuracy": 0.516,
+          "std_accuracy": 0.11926441212700462,
+          "folds": 40,
+          "accuracy": 0.516,
+          "n": 1000
+        }
+      ],
+      "direction_success": {
+        "passed": false,
+        "best_model": "lightgbm",
+        "best_accuracy": 0.516,
+        "naive_accuracy": 0.501,
+        "n_test": 200,
+        "criterion": "Best non-baseline accuracy >= 55% on >= 10 test rows, and beat naive (50.1%)",
+        "reason": "did_not_beat_chance_threshold",
+        "note": "Passing this gate means directional accuracy looked better than a simple baseline on one short holdout \u2014 not proven edge after costs."
+      },
+      "trading": {
+        "n_trades": 355,
+        "win_rate": 0.2676056338028169,
+        "sum_gross_return": 0.2680351472684468,
+        "sum_net_return": -2.9269648527315537,
+        "avg_gross_return": 0.0007550285838547797,
+        "avg_net_return": -0.008244971416145221,
+        "exit_reasons": {
+          "session_close": 344,
+          "stop_loss": 9,
+          "take_profit": 2
+        },
+        "passed": false,
+        "criterion": "Directional gate passed AND >=10 trades AND cash equity compounded return > 0 (execution_mode=stop_tp_costs, long_only=True)"
+      },
+      "equity_curve": {
+        "starting_cash": 100000.0,
+        "ending_equity": 94312.46035860779,
+        "compounded_return": -0.05687539641392214,
+        "max_drawdown": 0.057302190852578004,
+        "n_funded_trades": 355,
+        "notional_frac": 0.02,
+        "note": "Non-overlapping fixed-fraction sizing; sum of fractional trade returns is NOT portfolio growth \u2014 this curve is."
+      }
+    }
+  ]
+}

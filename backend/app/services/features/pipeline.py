@@ -51,10 +51,18 @@ FEATURE_DEFINITIONS = {
         "availability_rule": "Needs 5 volume observations",
     },
     "overnight_gap": {
-        "definition": "Open / prior close - 1",
+        "definition": (
+            "Session-T open / session-(T-1) close - 1. "
+            "Known once session T opens. For a next-session-OC forecast "
+            "issued at session-T close, this is lagged (already realised), "
+            "not the future session's opening gap."
+        ),
         "lookback": 1,
         "required_inputs": ["open_gbp", "close_gbp"],
-        "availability_rule": "Needs prior close and today open",
+        "availability_rule": (
+            "Needs prior close and as-of session open "
+            "(available at as-of open; safe at as-of close)"
+        ),
     },
 }
 

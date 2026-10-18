@@ -1,4 +1,7 @@
-LSE Pattern Lab — daily summary (sample)
-Session: 2024-03-15
-Data offline/demo: true
-This sample is illustrative. Synthetic data cannot establish profitability.
+LSE Pattern Lab — audit snapshot
+See docs/DIAGNOSIS.md and docs/RESEARCH_CONFIG.md.
+Diagnostic manifest: sample_artifacts/DIAGNOSTIC_MANIFEST.json
+
+Corrected defaults: train-majority naive, long-only, label purge,
+side-aware stamp, equity curve. Direction and trading gates still FAIL;
+zero-cost gross edge is negligible (~+0.07% avg).

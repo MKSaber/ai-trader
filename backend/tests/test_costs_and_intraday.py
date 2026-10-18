@@ -14,12 +14,15 @@ from app.services.intraday.engine import SetupSpec, generate_long_setup, simulat
 
 
 def test_stamp_duty_on_purchase() -> None:
-    """UK purchase includes stamp duty."""
+    """UK purchase includes stamp duty; shorts do not."""
     a = CostAssumptions(5, 10, 5, 0.01)
     costs = purchase_costs(10_000, a)
     assert costs >= 100  # 1% stamp
-    frac = estimate_round_trip_cost_fraction(a)
-    assert frac > 0.01
+    frac_long = estimate_round_trip_cost_fraction(a, side="long")
+    frac_short = estimate_round_trip_cost_fraction(a, side="short")
+    assert abs(frac_long - 0.014) < 1e-9  # 1.4% stress round-trip
+    assert abs(frac_short - 0.004) < 1e-9  # no stamp on short
+    assert frac_long > frac_short
 
 
 def test_same_bar_stop_target_ambiguous() -> None:

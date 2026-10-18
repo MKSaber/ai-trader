@@ -298,6 +298,10 @@ def run_rolling_eval(
     step_sessions: int = 5,
     max_folds: int | None = None,
     min_prob: float = 0.55,
+    long_only: bool = True,
+    execution_mode: str = "stop_tp_costs",
+    stamp_scenario: str = "stress_1pct",
+    purge_label_overlap: bool = True,
 ) -> dict[str, Any]:
     """Rolling 85/5 walk-forward with stop/TP paper scoring + tips."""
     settings = get_settings()
@@ -333,6 +337,11 @@ def run_rolling_eval(
         step_sessions=step_sessions,
         max_folds=max_folds,
         min_prob=min_prob,
+        long_only=long_only,
+        execution_mode=execution_mode,  # type: ignore[arg-type]
+        stamp_scenario=stamp_scenario,
+        purge_label_overlap=purge_label_overlap,
+        starting_cash=settings.initial_paper_cash_gbp,
         artifact_dir=Path(settings.local_storage_root) / "models" / "rolling",
     )
 

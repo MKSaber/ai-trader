@@ -95,7 +95,7 @@ export function ModelsPage() {
             setRolling(null);
             try {
               const res = await apiPost<RollingResult>(
-                "/research/rolling?train_sessions=85&test_sessions=5&step_sessions=5&fetch=true&lookback_days=1825",
+                "/research/rolling?train_sessions=85&test_sessions=5&step_sessions=5&fetch=false&long_only=true&execution_mode=stop_tp_costs&stamp_scenario=stress_1pct",
               );
               setRolling(res);
               await load();

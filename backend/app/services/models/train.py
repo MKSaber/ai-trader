@@ -51,8 +51,10 @@ def _purge_mask(
     train_end: date,
     embargo_sessions: int = 1,
 ) -> np.ndarray:
-    """Exclude overlapping label periods after train_end (simple embargo)."""
-    # Labels use next-session returns; embargo next session after train_end
+    """Exclude dates after train_end + embargo (legacy helper).
+
+    Prefer apply_label_purge in rolling eval for next-session labels.
+    """
     cutoff = pd.Timestamp(train_end) + pd.tseries.offsets.BDay(embargo_sessions)
     return np.asarray(pd.to_datetime(dates) <= cutoff)
 
@@ -244,24 +246,37 @@ def train_all_models(
 
     results: list[TrainResult] = []
 
-    # --- Naive baseline: predict 0 return / 0.5 prob (evaluated on test) ---
-    naive_metrics = _eval_predictions(
-        y_reg[test_idx],
-        np.zeros(int(test_idx.sum())),
-        y_clf[test_idx],
-        np.full(int(test_idx.sum()), 0.5),
+    # --- Naive baseline: train-fold majority class (never test-period rate) ---
+    from app.services.eval.baselines import naive_test_scores
+
+    n_test = int(test_idx.sum())
+    naive_reg, naive_prob, naive_meta = naive_test_scores(
+        y_clf[train_idx], n_test
     )
+    naive_metrics = _eval_predictions(
+        y_reg[test_idx], naive_reg, y_clf[test_idx], naive_prob
+    )
+    naive_metrics["baseline"] = naive_meta
     results.append(
         TrainResult(
             model_type="naive",
-            version=_version_tag("naive", train_end, "zero"),
+            version=_version_tag(
+                "naive", train_end, f"maj{naive_meta['train_majority_class']}"
+            ),
             artifact_path=None,
             formula={
                 "type": "naive",
-                "expression": "expected_return = 0",
-                "probability_up": 0.5,
+                "expression": (
+                    "expected_return = 0; "
+                    "direction = train_fold_majority_class"
+                ),
+                "train_majority_class": naive_meta["train_majority_class"],
+                "train_up_rate": naive_meta["train_up_rate"],
                 "horizon": horizon,
-                "note": "No demonstrated edge; baseline only",
+                "note": (
+                    "Train-period majority baseline only — "
+                    "not derived from the test fold."
+                ),
             },
             feature_importance=None,
             metrics=naive_metrics,
