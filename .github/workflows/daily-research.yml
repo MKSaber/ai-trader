@@ -1,0 +1,119 @@
+name: Daily research pipeline
+
+on:
+  schedule:
+    # ~18:30 UTC — after typical LSE close + data lag. Cron is UTC and approximate.
+    - cron: "30 18 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      session:
+        description: "Europe/London session YYYY-MM-DD (optional)"
+        required: false
+        type: string
+      catchup_from:
+        description: "Catch-up from YYYY-MM-DD"
+        required: false
+        type: string
+      catchup_to:
+        description: "Catch-up to YYYY-MM-DD"
+        required: false
+        type: string
+      offline:
+        description: "Explicit offline/fixture mode"
+        required: false
+        type: boolean
+        default: false
+      dry_run:
+        description: "Dry run"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-research
+  cancel-in-progress: false
+
+jobs:
+  daily-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      OBJECT_STORAGE_BACKEND: ${{ secrets.OBJECT_STORAGE_BACKEND || 'local' }}
+      LOCAL_STORAGE_ROOT: ${{ github.workspace }}/storage
+      S3_ENDPOINT_URL: ${{ secrets.S3_ENDPOINT_URL }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+      S3_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY_ID }}
+      S3_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_ACCESS_KEY }}
+      S3_REGION: ${{ secrets.S3_REGION || 'auto' }}
+      MARKET_DATA_PROVIDER: ${{ inputs.offline && 'fixture' || 'yfinance' }}
+      DEMO_MODE: ${{ inputs.offline && 'true' || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require DATABASE_URL
+        if: ${{ !inputs.offline }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL secret is required for scheduled live runs."
+            echo "Provision external Postgres and set the secret. See docs/PIPELINE.md."
+            mkdir -p artifacts
+            echo "BLOCKER: missing DATABASE_URL" > artifacts/FAILURE.txt
+            exit 1
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/pyproject.toml
+
+      - name: Install
+        working-directory: backend
+        run: pip install -e ".[dev]"
+
+      - name: Migrate
+        working-directory: backend
+        run: alembic upgrade head
+        continue-on-error: false
+
+      - name: Unit tests (smoke)
+        working-directory: backend
+        run: pytest -q tests/test_currency.py tests/test_upload_security.py
+        continue-on-error: true
+
+      - name: Daily run
+        id: pipeline
+        working-directory: backend
+        run: |
+          ARGS=()
+          if [ -n "${{ inputs.session }}" ]; then ARGS+=(--session "${{ inputs.session }}"); fi
+          if [ -n "${{ inputs.catchup_from }}" ]; then ARGS+=(--from "${{ inputs.catchup_from }}"); fi
+          if [ -n "${{ inputs.catchup_to }}" ]; then ARGS+=(--to "${{ inputs.catchup_to }}"); fi
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS+=(--dry-run); fi
+          if [ "${{ inputs.offline }}" = "true" ]; then ARGS+=(--offline); fi
+          python -m app.cli daily-run "${ARGS[@]}"
+
+      - name: Collect artifacts
+        if: always()
+        run: |
+          mkdir -p artifacts
+          if [ -d storage/artifacts ]; then
+            cp -R storage/artifacts/* artifacts/ 2>/dev/null || true
+          fi
+          if [ ! "$(ls -A artifacts 2>/dev/null)" ]; then
+            echo "No report bundle produced" > artifacts/NOTICE.txt
+            echo "Check pipeline logs. Provider failures must not emit fake live signals." >> artifacts/NOTICE.txt
+          fi
+
+      - name: Upload report bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-report-${{ github.run_id }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 30

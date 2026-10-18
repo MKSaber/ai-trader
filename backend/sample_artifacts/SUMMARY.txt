@@ -1,0 +1,4 @@
+LSE Pattern Lab — daily summary (sample)
+Session: 2024-03-15
+Data offline/demo: true
+This sample is illustrative. Synthetic data cannot establish profitability.
