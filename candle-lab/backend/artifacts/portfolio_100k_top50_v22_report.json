@@ -1,0 +1,51 @@
+{
+  "starting_cash_gbp": 100000,
+  "rules": "trade-rules-v2.2",
+  "broker": "trading212",
+  "universe_source": "Yahoo fast_info market_cap rank among FTSE / large-mid LSE candidates",
+  "universe_n": 50,
+  "universe": [
+    "HSBA.L", "SHEL.L", "AZN.L", "BHP.L", "RR.L", "RIO.L", "ULVR.L", "BATS.L", "BP.L", "GSK.L",
+    "GLEN.L", "NG.L", "LLOY.L", "BA.L", "BARC.L", "CPG.L", "NWG.L", "REL.L", "STAN.L", "AAL.L",
+    "LSEG.L", "DGE.L", "RKT.L", "ANTO.L", "TSCO.L", "HLN.L", "SSE.L", "VOD.L", "III.L", "EXPN.L",
+    "IHG.L", "PRU.L", "IMB.L", "AV.L", "BT-A.L", "NXT.L", "CCH.L", "SMT.L", "LGEN.L", "ABF.L",
+    "SGRO.L", "INF.L", "ADM.L", "UU.L", "AAF.L", "EDV.L", "SGE.L", "SVT.L", "SDR.L", "SN.L"
+  ],
+  "symbols_with_data": "50/50 all windows",
+  "windows": {
+    "60d": {
+      "pnl_gbp": -4321.34,
+      "return_pct": -4.3213,
+      "trades": 58,
+      "wins": 16,
+      "losses": 42,
+      "worst_symbols": ["III.L", "BA.L", "EDV.L", "HSBA.L", "HLN.L"],
+      "best_symbols": ["BATS.L", "GLEN.L", "IMB.L", "AV.L", "RKT.L"]
+    },
+    "90d": {
+      "pnl_gbp": -3341.31,
+      "return_pct": -3.3413,
+      "trades": 83,
+      "wins": 20,
+      "losses": 63,
+      "worst_symbols": ["DGE.L", "SN.L", "IHG.L", "NWG.L", "BA.L"],
+      "best_symbols": ["SGE.L", "BATS.L", "AAL.L", "BT-A.L", "HSBA.L"]
+    },
+    "120d": {
+      "pnl_gbp": -1811.30,
+      "return_pct": -1.8113,
+      "trades": 101,
+      "wins": 24,
+      "losses": 77,
+      "worst_symbols": ["GLEN.L", "SN.L", "BP.L", "EXPN.L", "BHP.L"],
+      "best_symbols": ["IMB.L", "CPG.L", "AAL.L", "BATS.L", "III.L"]
+    }
+  },
+  "compare": {
+    "top10_20k_60d": 620.08,
+    "top20_20k_60d": -177.09,
+    "top50_100k_60d": -4321.34,
+    "note": "v2.2 was tuned on top-10; edge does not hold when universe expands to top-50 at £100k — more stop volume from mid-caps / banks / miners."
+  },
+  "disclaimer": "In-sample paper sim; not live edge."
+}

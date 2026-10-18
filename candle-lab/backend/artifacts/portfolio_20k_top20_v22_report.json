@@ -1,0 +1,68 @@
+{
+  "starting_cash_gbp": 20000,
+  "rules": "trade-rules-v2.2",
+  "broker": "trading212",
+  "universe_source": "Yahoo fast_info market_cap rank among FTSE megacap candidates",
+  "universe": [
+    "HSBA.L",
+    "SHEL.L",
+    "AZN.L",
+    "RR.L",
+    "RIO.L",
+    "ULVR.L",
+    "BATS.L",
+    "BP.L",
+    "GSK.L",
+    "GLEN.L",
+    "NG.L",
+    "LLOY.L",
+    "BA.L",
+    "BARC.L",
+    "CPG.L",
+    "NWG.L",
+    "REL.L",
+    "STAN.L",
+    "AAL.L",
+    "LSEG.L"
+  ],
+  "added_vs_top10": [
+    "RR.L",
+    "GLEN.L",
+    "LLOY.L",
+    "BA.L",
+    "BARC.L",
+    "CPG.L",
+    "NWG.L",
+    "STAN.L",
+    "AAL.L",
+    "LSEG.L"
+  ],
+  "windows": {
+    "60d": {
+      "pnl_gbp": -177.09,
+      "return_pct": -0.8855,
+      "trades": 19,
+      "wins": 4,
+      "losses": 15,
+      "vs_top10_v22": 620.08
+    },
+    "90d": {
+      "pnl_gbp": 213.48,
+      "return_pct": 1.0674,
+      "trades": 32,
+      "wins": 6,
+      "losses": 26,
+      "vs_top10_v22": 1177.07
+    },
+    "120d": {
+      "pnl_gbp": 494.05,
+      "return_pct": 2.4702,
+      "trades": 38,
+      "wins": 8,
+      "losses": 30,
+      "vs_top10_v22": 741.67
+    }
+  },
+  "60d_note": "Slightly red vs top-10 green. New names BA/NWG/CPG/RR/BARC/LLOY were net stops; GLEN helped. 90d and 120d still green.",
+  "disclaimer": "In-sample paper sim; not live edge."
+}

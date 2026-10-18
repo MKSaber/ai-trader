@@ -85,23 +85,10 @@ def simulate_portfolio(
     day_trade_counts: dict[tuple[str, object], int] = {}
     trades: list[dict] = []
     equity_curve: list[dict] = []
-
-    def mark_equity(ts: pd.Timestamp) -> None:
-        exposure = 0.0
-        for setup in open_by_sym.values():
-            if setup.status == "open":
-                # mark at last known entry mid proxy (entry price); refined below per bar
-                exposure += setup.qty * setup.entry_price
-        equity_curve.append(
-            {
-                "ts": ts.isoformat(),
-                "cash": round(cash, 2),
-                "open_positions": sum(
-                    1 for s in open_by_sym.values() if s.status == "open"
-                ),
-                "equity_approx": round(cash + exposure, 2),
-            }
-        )
+    # v2.2 risk controls
+    cooloff_sym: set[str] = set()  # skip next signal after a stop
+    stop_counts: dict[str, int] = defaultdict(int)
+    initial_stop: dict[str, float] = {}
 
     last_close: dict[str, float] = {}
 
@@ -126,6 +113,12 @@ def simulate_portfolio(
             if setup.entry_i is not None and i == setup.entry_i:
                 pass
             else:
+                # Trail stop to breakeven after +N R favorable excursion
+                trail_r = getattr(rules, "trail_breakeven_r", None)
+                if trail_r is not None and sym in initial_stop:
+                    risk0 = max(setup.entry_price - initial_stop[sym], setup.entry_price * 1e-4)
+                    if high >= setup.entry_price + trail_r * risk0:
+                        setup.stop = max(setup.stop, setup.entry_price)
                 sim = simulate_long_bar(
                     setup.entry_price,
                     setup.stop,
@@ -148,6 +141,13 @@ def simulate_portfolio(
                         setup, exit_mid, reason, amb, i, cash, settings
                     )
                     trades.append(_trade_dict(setup))
+                    if reason.startswith("stop"):
+                        if getattr(rules, "cooloff_after_stop", False):
+                            cooloff_sym.add(sym)
+                        stop_counts[sym] += 1
+                    else:
+                        cooloff_sym.discard(sym)
+                    initial_stop.pop(sym, None)
                     del open_by_sym[sym]
                     setup = None
 
@@ -167,6 +167,13 @@ def simulate_portfolio(
                 rules.max_trades_per_day is not None
                 and day_trade_counts.get(key, 0) >= rules.max_trades_per_day
             ):
+                continue
+            if getattr(rules, "cooloff_after_stop", False) and sym in cooloff_sym:
+                # Consume cooloff: skip this signal, allow later ones
+                cooloff_sym.discard(sym)
+                continue
+            max_stops = getattr(rules, "max_stops_per_symbol", None)
+            if max_stops is not None and stop_counts[sym] >= max_stops:
                 continue
             if rules.require_downtrend and not in_downtrend(df, i):
                 continue
@@ -232,6 +239,7 @@ def simulate_portfolio(
                 setup.qty = qty
                 setup.entry_price = fill_px
                 setup.entry_i = i
+                initial_stop[sym] = setup.stop
                 day_trade_counts[(sym, day)] = day_trade_counts.get((sym, day), 0) + 1
 
         # light equity sample each event hour
@@ -290,7 +298,7 @@ def main() -> int:
     parser.add_argument("--cash", type=float, default=20_000.0)
     parser.add_argument("--symbols", default=DEFAULT_SYMBOLS)
     parser.add_argument("--broker", default="trading212", choices=sorted(BROKER_PROFILES))
-    parser.add_argument("--rules", default="trade-rules-v2.1")
+    parser.add_argument("--rules", default="trade-rules-v2.2")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -305,9 +313,8 @@ def main() -> int:
             "trade_rules_version": rules.version,
             "reward_risk": rules.reward_risk,
             "setup_expiry_bars": rules.setup_expiry_bars,
-            # With £20k, allow up to 25% in one name so 4R can clear SDRT
-            "max_position_frac": 0.25,
-            "risk_frac": 0.01,
+            "max_position_frac": rules.max_position_frac,
+            "risk_frac": rules.risk_frac,
         }
     )
 
@@ -315,7 +322,9 @@ def main() -> int:
     feed = []
     for sym in symbols:
         print(f"\n=== {sym} ===", flush=True)
-        raw = fetch_bars(sym, interval=rules.interval, period="60d")
+        # Intraday Yahoo: use 60d for ≤60 sessions; longer history via 730d when needed
+        period = "730d" if args.days > 60 else "60d"
+        raw = fetch_bars(sym, interval=rules.interval, period=period)
         if raw.empty:
             feed.append({"symbol": sym, "healthy": False})
             continue
@@ -348,7 +357,7 @@ def main() -> int:
         "disclaimer": (
             "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules "
             "and Trading 212 / GOV.UK costs. Not live broker execution. "
-            "v2.1 profit levers were tuned on the top-10 / 30d book — research only."
+            "v2.2 stay-green levers were tuned on the top-10 / 60d book — research only."
         ),
     }
 
