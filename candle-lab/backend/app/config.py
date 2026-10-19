@@ -81,7 +81,8 @@ class Settings(BaseSettings):
 
     symbols: str = "VOD.L,BP.L,HSBA.L,GSK.L,AZN.L"
     timezone: str = "Europe/London"
-    interval_minutes: int = 5
+    # Aligned with trade-rules-v2.6 (60m). Override via CANDLE_INTERVAL_MINUTES.
+    interval_minutes: int = 60
     poll_seconds: int = 30
     warmup_bars: int = 80
 
@@ -90,13 +91,13 @@ class Settings(BaseSettings):
     # Default paper costs track Trading 212 Invest (see COST_SOURCES.md).
     cost_profile: str = "trading212"
 
-    # Trade rules (frozen per experiment)
+    # Trade rules (frozen per experiment) — defaults match v2.6 golden
     entry_buffer_frac: float = 0.0005
     stop_buffer_frac: float = 0.0005
-    reward_risk: float = 2.0
-    setup_expiry_bars: int = 3
-    risk_frac: float = 0.005
-    max_position_frac: float = 0.1
+    reward_risk: float = 7.0
+    setup_expiry_bars: int = 5
+    risk_frac: float = 0.015
+    max_position_frac: float = 0.35
     starting_cash_gbp: float = 100_000.0
 
     commission_bps: float = 0.0

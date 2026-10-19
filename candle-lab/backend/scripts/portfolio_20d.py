@@ -39,7 +39,10 @@ from app.patterns import (
 from app.trade_rules import (
     expected_net_at_target,
     load_trade_rules,
+    passes_quality_filters,
+    pattern_levels_from_detection,
     setup_levels,
+    sync_settings_from_rules,
 )
 from scripts.backtest_20d import (
     LONDON,
@@ -209,37 +212,21 @@ def simulate_portfolio(
                 continue
             if max_stops_limit is not None and stop_counts[sym] >= max_stops_limit:
                 continue
-            if rules.require_downtrend and not in_downtrend(df, i):
+            if not passes_quality_filters(
+                rules=rules,
+                pattern=det.pattern,
+                conditions=det.conditions,
+                bar_high=high,
+                bar_low=low,
+                bar_close=close,
+                downtrend_ok=in_downtrend(df, i),
+                downtrend_pct=downtrend_depth_pct(df, i),
+                local_hour=local.hour,
+            ):
                 continue
-            min_dt = getattr(rules, "min_downtrend_pct", 0.0) or 0.0
-            if min_dt > 0 and downtrend_depth_pct(df, i) < min_dt:
-                continue
-            # Stronger engulfing: current body must dominate prior body
-            min_ratio = getattr(rules, "min_engulf_body_ratio", 1.0) or 1.0
-            if min_ratio > 1.0 and det.pattern == "bullish_engulfing":
-                bp = float(det.conditions.get("body_prev") or 0.0)
-                bc = float(det.conditions.get("body_cur") or 0.0)
-                if bp <= 0 or bc / bp < min_ratio:
-                    continue
-            # patterns-v2: volume confirmation
-            min_vol = getattr(rules, "min_volume_ratio", 0.0) or 0.0
-            if min_vol > 0:
-                vr = det.conditions.get("volume_ratio")
-                if vr is None or float(vr) < min_vol:
-                    continue
-            # patterns-v2: close in upper half of pattern range
-            if getattr(rules, "require_close_in_upper_half", False):
-                ph = float(det.conditions.get("pattern_high") or high)
-                pl = float(det.conditions.get("pattern_low") or low)
-                pc = float(det.conditions.get("pattern_close") or close)
-                if ph <= pl or pc < (ph + pl) / 2.0:
-                    continue
-            # Use full pattern range for multi-bar reversals when present
-            lvl_high = float(det.conditions.get("pattern_high") or high)
-            lvl_low = float(det.conditions.get("pattern_low") or low)
-            stop_pct = (lvl_high - lvl_low) / lvl_high if lvl_high else 0.0
-            if stop_pct < rules.min_stop_pct:
-                continue
+            lvl_high, lvl_low, pc = pattern_levels_from_detection(
+                det.conditions, high, low, close
+            )
             entry, stop, target = setup_levels(
                 lvl_high,
                 lvl_low,
@@ -258,7 +245,7 @@ def simulate_portfolio(
                 stop=stop,
                 target=target,
                 expiry_i=i + rules.setup_expiry_bars,
-                pattern_close=float(det.conditions.get("pattern_close") or close),
+                pattern_close=pc,
                 awaiting_next_open=need_next,
             )
             open_by_sym[sym] = setup
@@ -384,16 +371,7 @@ def main() -> int:
         Settings(starting_cash_gbp=args.cash),
         args.broker,
     )
-    risk_frac, max_position_frac = rules.sizing_for_cash(args.cash)
-    settings = settings.model_copy(
-        update={
-            "trade_rules_version": rules.version,
-            "reward_risk": rules.reward_risk,
-            "setup_expiry_bars": rules.setup_expiry_bars,
-            "max_position_frac": max_position_frac,
-            "risk_frac": risk_frac,
-        }
-    )
+    settings = sync_settings_from_rules(settings, rules)
 
     frames: dict[str, pd.DataFrame] = {}
     feed = []

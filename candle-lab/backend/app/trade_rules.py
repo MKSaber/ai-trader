@@ -482,6 +482,90 @@ def setup_levels(
     return entry, stop, target
 
 
+_INTERVAL_MINUTES = {"5m": 5, "15m": 15, "30m": 30, "60m": 60, "1h": 60}
+
+
+def interval_minutes(rules: TradeRules) -> int:
+    return _INTERVAL_MINUTES.get(rules.interval, 60)
+
+
+def sync_settings_from_rules(settings: Any, rules: TradeRules | None = None) -> Any:
+    """Align Settings knobs (RR, sizing, interval) with a TradeRules profile.
+
+    `settings` is an app.config.Settings instance; typed as Any to avoid a
+    circular import with config.py.
+    """
+    if rules is None:
+        rules = load_trade_rules(settings.trade_rules_version)
+    risk, max_pos = rules.sizing_for_cash(float(settings.starting_cash_gbp))
+    return settings.model_copy(
+        update={
+            "trade_rules_version": rules.version,
+            "reward_risk": rules.reward_risk,
+            "setup_expiry_bars": rules.setup_expiry_bars,
+            "risk_frac": risk,
+            "max_position_frac": max_pos,
+            "interval_minutes": interval_minutes(rules),
+        }
+    )
+
+
+def pattern_levels_from_detection(
+    det_conditions: dict[str, Any],
+    bar_high: float,
+    bar_low: float,
+    bar_close: float,
+) -> tuple[float, float, float]:
+    """Return (pattern_high, pattern_low, pattern_close) for stop/entry geometry."""
+    ph = float(det_conditions.get("pattern_high") or bar_high)
+    pl = float(det_conditions.get("pattern_low") or bar_low)
+    pc = float(det_conditions.get("pattern_close") or bar_close)
+    return ph, pl, pc
+
+
+def passes_quality_filters(
+    *,
+    rules: TradeRules,
+    pattern: str,
+    conditions: dict[str, Any],
+    bar_high: float,
+    bar_low: float,
+    bar_close: float,
+    downtrend_ok: bool,
+    downtrend_pct: float,
+    local_hour: int | None,
+) -> bool:
+    """Shared entry gates used by portfolio / backtest / live runner."""
+    if pattern not in rules.bullish_set:
+        return False
+    if rules.trade_hours_london is not None and local_hour is not None:
+        if local_hour not in rules.trade_hours_london:
+            return False
+    if rules.require_downtrend and not downtrend_ok:
+        return False
+    if rules.min_downtrend_pct > 0 and downtrend_pct < rules.min_downtrend_pct:
+        return False
+    if rules.min_engulf_body_ratio > 1.0 and pattern == "bullish_engulfing":
+        bp = float(conditions.get("body_prev") or 0.0)
+        bc = float(conditions.get("body_cur") or 0.0)
+        if bp <= 0 or bc / bp < rules.min_engulf_body_ratio:
+            return False
+    if rules.min_volume_ratio > 0:
+        vr = conditions.get("volume_ratio")
+        if vr is None or float(vr) < rules.min_volume_ratio:
+            return False
+    ph, pl, pc = pattern_levels_from_detection(
+        conditions, bar_high, bar_low, bar_close
+    )
+    if rules.require_close_in_upper_half:
+        if ph <= pl or pc < (ph + pl) / 2.0:
+            return False
+    stop_pct = (ph - pl) / ph if ph else 0.0
+    if stop_pct < rules.min_stop_pct:
+        return False
+    return True
+
+
 def expected_net_at_target(
     qty: float,
     entry: float,

@@ -29,18 +29,37 @@ from app.paper import (
     size_shares,
     utcnow,
 )
-from app.patterns import DETECTOR_VERSION, detect_closed_patterns
-from app.provider import fetch_intraday_5m, london_today
+from app.patterns import (
+    DETECTOR_VERSION,
+    detect_closed_patterns,
+    downtrend_depth_pct,
+    in_downtrend,
+)
+from app.provider import fetch_intraday, london_today
+from app.trade_rules import (
+    load_trade_rules,
+    passes_quality_filters,
+    pattern_levels_from_detection,
+    setup_levels,
+    sync_settings_from_rules,
+)
 
 LONDON = ZoneInfo("Europe/London")
 
 
+def _active_rules_and_settings():
+    """Load frozen trade-rules profile and sync Settings knobs to match."""
+    base = get_settings()
+    rules = load_trade_rules(base.trade_rules_version)
+    return rules, sync_settings_from_rules(base, rules)
+
+
 def freeze_experiment(db: Session) -> Experiment:
-    s = get_settings()
+    rules, s = _active_rules_and_settings()
     exp = Experiment(
         name=f"candle-{london_today().isoformat()}",
-        detector_version=s.detector_version,
-        trade_rules_version=s.trade_rules_version,
+        detector_version=DETECTOR_VERSION,
+        trade_rules_version=rules.version,
         config_json=json.dumps(s.model_dump()),
         created_at=utcnow(),
     )
@@ -51,7 +70,7 @@ def freeze_experiment(db: Session) -> Experiment:
 
 
 def start_session(db: Session, experiment_id: int) -> SessionRun:
-    s = get_settings()
+    _rules, s = _active_rules_and_settings()
     run = SessionRun(
         experiment_id=experiment_id,
         session_date=london_today().isoformat(),
@@ -81,7 +100,7 @@ def start_session(db: Session, experiment_id: int) -> SessionRun:
 
 
 def _upsert_bars(db: Session, symbol: str, df: pd.DataFrame) -> int:
-    s = get_settings()
+    _rules, s = _active_rules_and_settings()
     n = 0
     arrival = utcnow()
     for _, row in df.iterrows():
@@ -124,7 +143,7 @@ def _upsert_bars(db: Session, symbol: str, df: pd.DataFrame) -> int:
 
 
 def _bars_frame(db: Session, symbol: str) -> pd.DataFrame:
-    s = get_settings()
+    _rules, s = _active_rules_and_settings()
     rows = db.scalars(
         select(CandleBar)
         .where(
@@ -161,13 +180,12 @@ def _issue_signal(
     bars_slice: pd.DataFrame,
     conditions: dict,
 ) -> PatternSignal | None:
-    s = get_settings()
     exists = db.scalar(
         select(PatternSignal).where(
             PatternSignal.symbol == symbol,
             PatternSignal.pattern == pattern,
             PatternSignal.confirm_bar_start == confirm_bar_start,
-            PatternSignal.detector_version == s.detector_version,
+            PatternSignal.detector_version == DETECTOR_VERSION,
         )
     )
     if exists:
@@ -179,7 +197,7 @@ def _issue_signal(
         direction=direction,
         confirm_bar_start=confirm_bar_start,
         issued_at=utcnow(),
-        detector_version=s.detector_version,
+        detector_version=DETECTOR_VERSION,
         bars_json=bars_slice.to_json(orient="records", date_format="iso"),
         conditions_json=json.dumps(conditions),
         provisional=False,
@@ -190,9 +208,14 @@ def _issue_signal(
 
 
 def _create_long_setup(
-    db: Session, run_id: int, sig: PatternSignal, pattern_high: float, pattern_low: float
+    db: Session,
+    run_id: int,
+    sig: PatternSignal,
+    pattern_high: float,
+    pattern_low: float,
+    rules,
+    settings,
 ) -> Setup | None:
-    s = get_settings()
     open_pos = db.scalar(
         select(Setup).where(
             Setup.session_run_id == run_id,
@@ -202,11 +225,17 @@ def _create_long_setup(
     )
     if open_pos:
         return None
-    entry = pattern_high * (1.0 + s.entry_buffer_frac)
-    stop = pattern_low * (1.0 - s.stop_buffer_frac)
-    risk = max(entry - stop, entry * 1e-4)
-    target = entry + s.reward_risk * risk
-    expiry = sig.confirm_bar_start + timedelta(minutes=s.interval_minutes * s.setup_expiry_bars)
+    entry, stop, target = setup_levels(
+        pattern_high,
+        pattern_low,
+        entry_buffer_frac=settings.entry_buffer_frac,
+        stop_buffer_frac=settings.stop_buffer_frac,
+        reward_risk=rules.reward_risk,
+        stop_pad_ranges=rules.stop_pad_ranges,
+    )
+    expiry = sig.confirm_bar_start + timedelta(
+        minutes=settings.interval_minutes * rules.setup_expiry_bars
+    )
     setup = Setup(
         signal_id=sig.id,
         session_run_id=run_id,
@@ -217,7 +246,7 @@ def _create_long_setup(
         stop=stop,
         target=target,
         expiry_bar_start=expiry,
-        rules_version=s.trade_rules_version,
+        rules_version=rules.version,
         created_at=utcnow(),
     )
     db.add(setup)
@@ -231,14 +260,14 @@ def _ledger_cash(db: Session, run_id: int) -> float:
         .where(LedgerSnapshot.session_run_id == run_id)
         .order_by(LedgerSnapshot.id.desc())
     ).first()
-    s = get_settings()
+    _rules, s = _active_rules_and_settings()
     return snap.cash_gbp if snap else s.starting_cash_gbp
 
 
 def _process_setups(db: Session, run_id: int, symbol: str, df: pd.DataFrame) -> None:
     if df.empty:
         return
-    s = get_settings()
+    _rules, s = _active_rules_and_settings()
     closed = df[df["closed"]].copy()
     if closed.empty:
         return
@@ -260,13 +289,13 @@ def _process_setups(db: Session, run_id: int, symbol: str, df: pd.DataFrame) -> 
             # Arrival-time fill: use current closed bar only (no lookback fill)
             if float(last["high"]) >= setup.entry_trigger:
                 mid = max(setup.entry_trigger, float(last["open"]))
-                fill_px = adverse_entry_price(mid)
-                qty = size_shares(cash, fill_px, setup.stop)
+                fill_px = adverse_entry_price(mid, s)
+                qty = size_shares(cash, fill_px, setup.stop, s)
                 if qty <= 0:
                     setup.status = "excluded_no_cash"
                     continue
                 notional = qty * fill_px
-                costs = entry_costs(notional)
+                costs = entry_costs(notional, s)
                 cash -= notional + costs.total
                 db.add(
                     PaperFill(
@@ -319,9 +348,9 @@ def _process_setups(db: Session, run_id: int, symbol: str, df: pd.DataFrame) -> 
                 exit_mid = sim.exit_mid
                 reason = sim.reason
                 ambiguous = sim.ambiguous
-            fill_px = adverse_exit_price(exit_mid)
+            fill_px = adverse_exit_price(exit_mid, s)
             notional = entry_fill.qty * fill_px
-            costs = exit_costs(entry_fill.qty * fill_px)
+            costs = exit_costs(entry_fill.qty * fill_px, s)
             cash = _ledger_cash(db, run_id) + notional - costs.total
             db.add(
                 PaperFill(
@@ -349,15 +378,19 @@ def _process_setups(db: Session, run_id: int, symbol: str, df: pd.DataFrame) -> 
 
 
 def poll_once(db: Session, run_id: int) -> dict:
-    """One poll cycle for all symbols."""
-    s = get_settings()
+    """One poll cycle for all symbols under the active trade-rules profile."""
+    rules, s = _active_rules_and_settings()
     run = db.get(SessionRun, run_id)
     if not run or run.status != "running":
         return {"ok": False, "message": "no running session"}
     feed_msgs = []
     detections = 0
+    # 60m history needs a longer Yahoo period than 5m
+    period = "60d" if s.interval_minutes >= 60 else "5d"
     for symbol in s.symbol_list:
-        df, status = fetch_intraday_5m(symbol, period="5d")
+        if symbol in rules.blocklist_set:
+            continue
+        df, status = fetch_intraday(symbol, period=period, interval_minutes=s.interval_minutes)
         feed_msgs.append({"symbol": symbol, **status.__dict__})
         if df.empty or not status.healthy:
             continue
@@ -390,31 +423,36 @@ def poll_once(db: Session, run_id: int) -> dict:
             if not sig:
                 continue
             detections += 1
-            if det.direction == "up" and det.pattern in {
-                "bullish_engulfing",
-                "hammer",
-            }:
+            if det.direction == "up":
                 row = closed.iloc[confirm_i]
-                _create_long_setup(
-                    db, run_id, sig, float(row["high"]), float(row["low"])
+                local = confirm_ts.astimezone(LONDON)
+                if not passes_quality_filters(
+                    rules=rules,
+                    pattern=det.pattern,
+                    conditions=det.conditions,
+                    bar_high=float(row["high"]),
+                    bar_low=float(row["low"]),
+                    bar_close=float(row["close"]),
+                    downtrend_ok=in_downtrend(closed, confirm_i),
+                    downtrend_pct=downtrend_depth_pct(closed, confirm_i),
+                    local_hour=local.hour,
+                ):
+                    continue
+                ph, pl, _pc = pattern_levels_from_detection(
+                    det.conditions,
+                    float(row["high"]),
+                    float(row["low"]),
+                    float(row["close"]),
                 )
-            # Bearish: observation only (no short); may mark exit intent
-            if det.direction == "down":
-                open_long = db.scalar(
-                    select(Setup).where(
-                        Setup.session_run_id == run_id,
-                        Setup.symbol == symbol,
-                        Setup.status == "open",
-                    )
-                )
-                if open_long:
-                    # Soft flag via note on next ledger — exit handled by stop/target/EOD
-                    pass
+                _create_long_setup(db, run_id, sig, ph, pl, rules, s)
+            # Bearish: observation only (no short); exit handled by stop/target/EOD
         db.commit()
         _process_setups(db, run_id, symbol, frame)
     return {
         "ok": True,
         "detections_issued": detections,
+        "trade_rules_version": rules.version,
+        "interval_minutes": s.interval_minutes,
         "feed": [
             {
                 "symbol": m["symbol"],
@@ -435,15 +473,18 @@ def day_chart_payload(
     day: str,
 ) -> dict:
     """Candles + patterns + setups for one London calendar day (learning view)."""
-    s = get_settings()
+    rules, s = _active_rules_and_settings()
     day_date = datetime.fromisoformat(day).date()
     start = datetime(day_date.year, day_date.month, day_date.day, tzinfo=LONDON)
     end = start + timedelta(days=1)
     start_utc = start.astimezone(timezone.utc)
     end_utc = end.astimezone(timezone.utc)
 
-    # Yahoo 5m history is typically ~60 days — use that for Learn (not 7d).
-    df, status = fetch_intraday_5m(symbol, period="60d")
+    # Yahoo intraday history is typically ~60 days — use that for Learn.
+    period = "60d" if s.interval_minutes >= 60 else "60d"
+    df, status = fetch_intraday(
+        symbol, period=period, interval_minutes=s.interval_minutes
+    )
     if not df.empty:
         _upsert_bars(db, symbol, df)
 
@@ -504,35 +545,51 @@ def day_chart_payload(
             if not (start_utc <= ts < end_utc):
                 continue
             row = closed.iloc[det.confirm_index]
+            ph, pl, _pc = pattern_levels_from_detection(
+                det.conditions,
+                float(row["high"]),
+                float(row["low"]),
+                float(row["close"]),
+            )
+            entry = stop = tp = None
+            action = "sell_observation_or_exit_long"
+            if det.direction == "up":
+                local = ts.astimezone(LONDON)
+                ok = passes_quality_filters(
+                    rules=rules,
+                    pattern=det.pattern,
+                    conditions=det.conditions,
+                    bar_high=float(row["high"]),
+                    bar_low=float(row["low"]),
+                    bar_close=float(row["close"]),
+                    downtrend_ok=in_downtrend(closed, det.confirm_index),
+                    downtrend_pct=downtrend_depth_pct(closed, det.confirm_index),
+                    local_hour=local.hour,
+                )
+                if ok:
+                    entry, stop, tp = setup_levels(
+                        ph,
+                        pl,
+                        entry_buffer_frac=s.entry_buffer_frac,
+                        stop_buffer_frac=s.stop_buffer_frac,
+                        reward_risk=rules.reward_risk,
+                        stop_pad_ranges=rules.stop_pad_ranges,
+                    )
+                    action = "buy_setup"
+                else:
+                    action = "up_filtered_by_rules"
             patterns.append(
                 {
                     "pattern": det.pattern,
                     "direction": det.direction,
                     "confirm_bar_start": ts.isoformat(),
                     "conditions": det.conditions,
-                    "pattern_high": float(row["high"]),
-                    "pattern_low": float(row["low"]),
-                    "entry_trigger": float(row["high"]) * (1.0 + s.entry_buffer_frac)
-                    if det.direction == "up"
-                    else None,
-                    "stop": float(row["low"]) * (1.0 - s.stop_buffer_frac)
-                    if det.direction == "up"
-                    else None,
-                    "take_profit": (
-                        float(row["high"]) * (1.0 + s.entry_buffer_frac)
-                        + s.reward_risk
-                        * (
-                            float(row["high"]) * (1.0 + s.entry_buffer_frac)
-                            - float(row["low"]) * (1.0 - s.stop_buffer_frac)
-                        )
-                    )
-                    if det.direction == "up"
-                    else None,
-                    "action": (
-                        "buy_setup"
-                        if det.direction == "up"
-                        else "sell_observation_or_exit_long"
-                    ),
+                    "pattern_high": ph,
+                    "pattern_low": pl,
+                    "entry_trigger": entry,
+                    "stop": stop,
+                    "take_profit": tp,
+                    "action": action,
                 }
             )
 
@@ -599,11 +656,13 @@ def day_chart_payload(
         "available_days": available_days[:20],
         "suggested_day": suggested_day,
         "empty_reason": empty_reason,
-        "detector_version": s.detector_version,
-        "trade_rules_version": s.trade_rules_version,
+        "detector_version": DETECTOR_VERSION,
+        "trade_rules_version": rules.version,
+        "interval_minutes": s.interval_minutes,
         "note": (
-            "Learning chart: patterns detected on closed 5m candles; "
-            "buy/stop/take-profit levels follow trade-rules-v1 (illustrative). "
-            "Pick a London session weekday — weekends have no LSE 5m bars."
+            f"Learning chart: patterns on closed {s.interval_minutes}m candles; "
+            f"buy/stop/take-profit follow {rules.version} "
+            f"({', '.join(rules.bullish_patterns)}, RR={rules.reward_risk}). "
+            "Pick a London session weekday — weekends have no LSE bars."
         ),
     }

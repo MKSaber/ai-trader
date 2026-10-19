@@ -18,6 +18,8 @@ from app.config import get_settings
 
 LONDON = ZoneInfo("Europe/London")
 
+_YF_INTERVAL = {1: "1m", 5: "5m", 15: "15m", 30: "30m", 60: "60m", 90: "90m"}
+
 
 @dataclass
 class FeedStatus:
@@ -34,14 +36,21 @@ def _session():
     return curl_requests.Session(impersonate="chrome")
 
 
-def fetch_intraday_5m(symbol: str, period: str = "5d") -> tuple[pd.DataFrame, FeedStatus]:
-    """Fetch 5-minute bars. Returns closed+forming rows; caller marks closed."""
+def fetch_intraday(
+    symbol: str,
+    period: str = "5d",
+    *,
+    interval_minutes: int | None = None,
+) -> tuple[pd.DataFrame, FeedStatus]:
+    """Fetch intraday bars at the configured (or overridden) interval."""
     settings = get_settings()
+    mins = interval_minutes if interval_minutes is not None else settings.interval_minutes
+    yf_interval = _YF_INTERVAL.get(mins, "60m")
     arrival = datetime.now(timezone.utc)
     ticker = yf.Ticker(symbol, session=_session())
     frame = ticker.history(
         period=period,
-        interval="5m",
+        interval=yf_interval,
         auto_adjust=False,
         prepost=False,
         actions=False,
@@ -54,7 +63,7 @@ def fetch_intraday_5m(symbol: str, period: str = "5d") -> tuple[pd.DataFrame, Fe
             last_arrival_ts=arrival,
             delay_seconds=None,
             healthy=False,
-            message=f"yfinance returned empty 5m history for {symbol}",
+            message=f"yfinance returned empty {yf_interval} history for {symbol}",
         )
         return pd.DataFrame(), status
 
@@ -76,11 +85,10 @@ def fetch_intraday_5m(symbol: str, period: str = "5d") -> tuple[pd.DataFrame, Fe
     if last_event.tzinfo is None:
         last_event = last_event.replace(tzinfo=timezone.utc)
     delay = (arrival - last_event).total_seconds()
-    # Forming bar: if last bar started less than interval ago, mark incomplete
-    interval = settings.interval_minutes * 60
+    interval_sec = mins * 60
     age = (arrival - last_event).total_seconds()
     df["closed"] = True
-    if age < interval:
+    if age < interval_sec:
         df.loc[df.index[-1], "closed"] = False
 
     status = FeedStatus(
@@ -93,10 +101,15 @@ def fetch_intraday_5m(symbol: str, period: str = "5d") -> tuple[pd.DataFrame, Fe
         message=(
             "DELAYED Yahoo Finance via yfinance — not a real-time broker feed. "
             "Unsuitable to prove timely live execution. "
-            f"Last bar event age ≈ {delay:.0f}s."
+            f"Interval {yf_interval}; last bar event age ≈ {delay:.0f}s."
         ),
     )
     return df, status
+
+
+def fetch_intraday_5m(symbol: str, period: str = "5d") -> tuple[pd.DataFrame, FeedStatus]:
+    """Back-compat alias — prefers settings.interval_minutes (v2.6 → 60m)."""
+    return fetch_intraday(symbol, period=period)
 
 
 def london_today():
