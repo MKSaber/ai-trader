@@ -1,0 +1,34 @@
+{
+  "formula": "trade-rules-v2.6",
+  "pick": "engulf+harami",
+  "detector": "patterns-v2",
+  "approach": "v2.5 full-day shell + bullish harami from patterns-v2 A/B. Volume/next-open packs either failed dual-green or collapsed trade count.",
+  "static": {
+    "hours": [10, 11, 12, 13, 14, 15],
+    "reward_risk": 7.0,
+    "min_downtrend_pct": 0.02,
+    "cooloff_after_stop": true,
+    "max_stops_per_symbol": 2,
+    "risk_frac": 0.015,
+    "max_position_frac": 0.35,
+    "patterns": ["bullish_engulfing", "bullish_harami"],
+    "min_volume_ratio": 0.0,
+    "require_next_open_confirm": false,
+    "cash_forks": false
+  },
+  "matrix_all_green": {
+    "top10_20k": {"60d": 938, "90d": 977, "120d": 2137, "trades_60d": 12},
+    "top50_100k": {"60d": 6610, "90d": 4564, "120d": 11645, "trades_60d": 21}
+  },
+  "vs_v25_engulf_control": {
+    "top10_60d": {"v25_engulf": 333, "v26_harami": 938},
+    "top50_60d": {"v25_engulf": 3483, "v26_harami": 6610},
+    "note": "Control still dual-green under patterns-v2 geometry; harami lifts min PnL without sparsity."
+  },
+  "rejected": {
+    "pierce_only": "red on both books",
+    "engulf+pierce / engulf+ms": "t50 90d red",
+    "volume gates (vol1.2 alone)": "dual-green but 1-3 trades — too sparse",
+    "next-open confirm": "hurt top10 or zeroed trades"
+  }
+}

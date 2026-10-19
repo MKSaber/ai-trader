@@ -1,0 +1,25 @@
+{
+  "formula": "trade-rules-v2.5",
+  "pick": "dt2+rr7",
+  "approach": "Full London session (10-15). Selectivity via deeper downtrend (≥2%) and RR=7 — not hour slicing.",
+  "static": {
+    "hours": [10, 11, 12, 13, 14, 15],
+    "reward_risk": 7.0,
+    "min_downtrend_pct": 0.02,
+    "cooloff_after_stop": true,
+    "max_stops_per_symbol": 2,
+    "risk_frac": 0.015,
+    "max_position_frac": 0.35,
+    "pattern": "bullish_engulfing",
+    "cash_forks": false
+  },
+  "matrix_all_green": {
+    "top10_20k": {"60d": 746.42, "90d": 1827.34, "120d": 2138.63, "trades_60d": 12},
+    "top20_20k": {"60d": 427.41, "90d": 1475.01, "120d": 1089.81},
+    "top50_100k": {"60d": 3224.14, "90d": 17273.48, "120d": 16475.55, "trades_60d": 20}
+  },
+  "vs_v24_hour15": {
+    "top10_60d_trades": {"v24": 7, "v25": 12},
+    "note": "More signals across the day while staying green."
+  }
+}

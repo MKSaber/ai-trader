@@ -58,11 +58,11 @@ Trading 212 / eToro schedules) are documented in [COST_SOURCES.md](COST_SOURCES.
 
 ```bash
 cd candle-lab/backend && . .venv/bin/activate
-# Default trade-rules-v2 (60m, cost-aware) — see TRADE_RULES.md + IG_PLAYBOOK.md
-python scripts/backtest_20d.py --days 10 --rules trade-rules-v2 --broker trading212 \
+# Per-symbol + shared portfolio simulators default to trade-rules-v2.6
+python scripts/backtest_20d.py --days 10 --rules trade-rules-v2.6 --broker trading212 \
   --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
-# Shared portfolio (v2.4 golden unified default):
-python scripts/portfolio_20d.py --days 60 --cash 100000 --rules trade-rules-v2.4 --broker trading212
+python scripts/portfolio_20d.py --days 60 --cash 20000 --rules trade-rules-v2.6 --broker trading212
+# Live paper runner (API) also loads v2.6 — see /api/health
 # Legacy:
 python scripts/backtest_20d.py --days 10 --rules trade-rules-v1 --broker trading212
 ```

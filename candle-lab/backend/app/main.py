@@ -24,6 +24,7 @@ from app.db import (
 )
 from app.patterns import DETECTOR_VERSION
 from app.runner import day_chart_payload, freeze_experiment, poll_once, start_session
+from app.trade_rules import load_trade_rules, sync_settings_from_rules
 
 
 @asynccontextmanager
@@ -49,17 +50,23 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
-    s = get_settings()
+    base = get_settings()
+    rules = load_trade_rules(base.trade_rules_version)
+    s = sync_settings_from_rules(base, rules)
     return {
         "app": "Live Candle Pattern Test",
         "status": "ok",
         "detector_version": DETECTOR_VERSION,
-        "trade_rules_version": s.trade_rules_version,
+        "trade_rules_version": rules.version,
+        "trade_rules_label": rules.label,
+        "bullish_patterns": list(rules.bullish_patterns),
+        "interval_minutes": s.interval_minutes,
+        "reward_risk": rules.reward_risk,
         "feed_label": s.feed_label,
         "feed_is_realtime": False,
         "disclaimer": (
             "Independent of LSE Pattern Lab. Feed is DELAYED Yahoo via yfinance. "
-            "Paper trading only — no broker orders."
+            "Paper trading only — no broker orders. Simulator uses trade-rules-v2.6."
         ),
         "symbols": s.symbol_list,
     }

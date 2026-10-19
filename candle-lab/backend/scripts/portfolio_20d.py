@@ -30,11 +30,19 @@ from app.paper import (
     simulate_long_bar,
     size_shares,
 )
-from app.patterns import DETECTOR_VERSION, detect_closed_patterns, in_downtrend
+from app.patterns import (
+    DETECTOR_VERSION,
+    detect_closed_patterns,
+    downtrend_depth_pct,
+    in_downtrend,
+)
 from app.trade_rules import (
     expected_net_at_target,
     load_trade_rules,
+    passes_quality_filters,
+    pattern_levels_from_detection,
     setup_levels,
+    sync_settings_from_rules,
 )
 from scripts.backtest_20d import (
     LONDON,
@@ -118,43 +126,66 @@ def simulate_portfolio(
             if setup.entry_i is not None and i == setup.entry_i:
                 pass
             else:
-                # Trail stop to breakeven after +N R favorable excursion
-                trail_r = getattr(rules, "trail_breakeven_r", None)
-                if trail_r is not None and sym in initial_stop:
-                    risk0 = max(setup.entry_price - initial_stop[sym], setup.entry_price * 1e-4)
-                    if high >= setup.entry_price + trail_r * risk0:
-                        setup.stop = max(setup.stop, setup.entry_price)
-                sim = simulate_long_bar(
-                    setup.entry_price,
-                    setup.stop,
-                    setup.target,
-                    high,
-                    low,
-                    close,
-                )
-                force = rules.session_flat and _force_session_flat(bar_start)
-                if sim is not None or force:
-                    if sim is None:
-                        exit_mid, reason, amb = close, "session_flat", False
-                    else:
-                        exit_mid, reason, amb = (
-                            sim.exit_mid,
-                            sim.reason,
-                            sim.ambiguous,
+                # Optional early exit on bearish reversal candle
+                if rules.exit_on_bearish:
+                    for det in by_symbol[sym].get(i, []):
+                        if det.direction == "down":
+                            setup, cash, _pnl = _close_long(
+                                setup,
+                                close,
+                                f"bearish_{det.pattern}",
+                                False,
+                                i,
+                                cash,
+                                settings,
+                            )
+                            trades.append(_trade_dict(setup))
+                            cooloff_sym.discard(sym)
+                            initial_stop.pop(sym, None)
+                            del open_by_sym[sym]
+                            setup = None
+                            break
+                if setup is not None and setup.status == "open":
+                    # Trail stop to breakeven after +N R favorable excursion
+                    trail_r = getattr(rules, "trail_breakeven_r", None)
+                    if trail_r is not None and sym in initial_stop:
+                        risk0 = max(
+                            setup.entry_price - initial_stop[sym],
+                            setup.entry_price * 1e-4,
                         )
-                    setup, cash, _pnl = _close_long(
-                        setup, exit_mid, reason, amb, i, cash, settings
+                        if high >= setup.entry_price + trail_r * risk0:
+                            setup.stop = max(setup.stop, setup.entry_price)
+                    sim = simulate_long_bar(
+                        setup.entry_price,
+                        setup.stop,
+                        setup.target,
+                        high,
+                        low,
+                        close,
                     )
-                    trades.append(_trade_dict(setup))
-                    if reason.startswith("stop"):
-                        if getattr(rules, "cooloff_after_stop", False):
-                            cooloff_sym.add(sym)
-                        stop_counts[sym] += 1
-                    else:
-                        cooloff_sym.discard(sym)
-                    initial_stop.pop(sym, None)
-                    del open_by_sym[sym]
-                    setup = None
+                    force = rules.session_flat and _force_session_flat(bar_start)
+                    if sim is not None or force:
+                        if sim is None:
+                            exit_mid, reason, amb = close, "session_flat", False
+                        else:
+                            exit_mid, reason, amb = (
+                                sim.exit_mid,
+                                sim.reason,
+                                sim.ambiguous,
+                            )
+                        setup, cash, _pnl = _close_long(
+                            setup, exit_mid, reason, amb, i, cash, settings
+                        )
+                        trades.append(_trade_dict(setup))
+                        if reason.startswith("stop"):
+                            if getattr(rules, "cooloff_after_stop", False):
+                                cooloff_sym.add(sym)
+                            stop_counts[sym] += 1
+                        else:
+                            cooloff_sym.discard(sym)
+                        initial_stop.pop(sym, None)
+                        del open_by_sym[sym]
+                        setup = None
 
         # --- new signals on this closed bar ---
         for det in by_symbol[sym].get(i, []):
@@ -181,19 +212,30 @@ def simulate_portfolio(
                 continue
             if max_stops_limit is not None and stop_counts[sym] >= max_stops_limit:
                 continue
-            if rules.require_downtrend and not in_downtrend(df, i):
+            if not passes_quality_filters(
+                rules=rules,
+                pattern=det.pattern,
+                conditions=det.conditions,
+                bar_high=high,
+                bar_low=low,
+                bar_close=close,
+                downtrend_ok=in_downtrend(df, i),
+                downtrend_pct=downtrend_depth_pct(df, i),
+                local_hour=local.hour,
+            ):
                 continue
-            stop_pct = (high - low) / high if high else 0.0
-            if stop_pct < rules.min_stop_pct:
-                continue
+            lvl_high, lvl_low, pc = pattern_levels_from_detection(
+                det.conditions, high, low, close
+            )
             entry, stop, target = setup_levels(
-                high,
-                low,
+                lvl_high,
+                lvl_low,
                 entry_buffer_frac=settings.entry_buffer_frac,
                 stop_buffer_frac=settings.stop_buffer_frac,
                 reward_risk=rules.reward_risk,
                 stop_pad_ranges=rules.stop_pad_ranges,
             )
+            need_next = bool(getattr(rules, "require_next_open_confirm", False))
             setup = OpenSetup(
                 symbol=sym,
                 pattern=det.pattern,
@@ -203,6 +245,8 @@ def simulate_portfolio(
                 stop=stop,
                 target=target,
                 expiry_i=i + rules.setup_expiry_bars,
+                pattern_close=pc,
+                awaiting_next_open=need_next,
             )
             open_by_sym[sym] = setup
 
@@ -211,6 +255,19 @@ def simulate_portfolio(
         if setup and setup.status == "pending":
             if i <= setup.confirm_i:
                 continue
+            # Next-bar open must clear pattern close (patterns-v2 confirm)
+            if setup.awaiting_next_open:
+                if i == setup.confirm_i + 1:
+                    if open_px < setup.pattern_close:
+                        setup.status = "expired"
+                        del open_by_sym[sym]
+                        continue
+                    setup.awaiting_next_open = False
+                else:
+                    # Missed the immediate next bar — drop the setup
+                    setup.status = "expired"
+                    del open_by_sym[sym]
+                    continue
             if i > setup.expiry_i:
                 setup.status = "expired"
                 del open_by_sym[sym]
@@ -304,7 +361,7 @@ def main() -> int:
     parser.add_argument("--cash", type=float, default=20_000.0)
     parser.add_argument("--symbols", default=DEFAULT_SYMBOLS)
     parser.add_argument("--broker", default="trading212", choices=sorted(BROKER_PROFILES))
-    parser.add_argument("--rules", default="trade-rules-v2.4")
+    parser.add_argument("--rules", default="trade-rules-v2.6")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -314,16 +371,7 @@ def main() -> int:
         Settings(starting_cash_gbp=args.cash),
         args.broker,
     )
-    risk_frac, max_position_frac = rules.sizing_for_cash(args.cash)
-    settings = settings.model_copy(
-        update={
-            "trade_rules_version": rules.version,
-            "reward_risk": rules.reward_risk,
-            "setup_expiry_bars": rules.setup_expiry_bars,
-            "max_position_frac": max_position_frac,
-            "risk_frac": risk_frac,
-        }
-    )
+    settings = sync_settings_from_rules(settings, rules)
 
     frames: dict[str, pd.DataFrame] = {}
     feed = []
@@ -364,8 +412,8 @@ def main() -> int:
         "disclaimer": (
             "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules "
             "and Trading 212 / GOV.UK costs. Not live broker execution. "
-            "v2.4 golden unified formula (RR=6 + blocklist + static 1.5%/35%) "
-            "— one profile for all books; research only."
+            "v2.6 patterns-v2 golden (engulfing+harami, hours 10-15, "
+            "downtrend≥2%, RR=7, blocklist) — research only."
         ),
     }
 

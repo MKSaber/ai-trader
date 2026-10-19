@@ -4,7 +4,9 @@ trade-rules-v1: original 5m long breakout (often uneconomic vs 0.5% SDRT).
 trade-rules-v2 / v2.1: cost-aware 60m rules.
 trade-rules-v2.2: stay green on top-10 / 60d (hour-15 filter + cooloff/sizing).
 trade-rules-v2.3: transitional cash-aware broad-book fix (superseded by v2.4).
-trade-rules-v2.4: golden unified formula — one static profile for all books.
+trade-rules-v2.4: hour-15 golden (superseded for full-day trading by v2.5).
+trade-rules-v2.5: full-session golden — quality filters, not hour slicing.
+trade-rules-v2.6: patterns-v2 golden — v2.5 shell + bullish harami (A/B pick).
 """
 
 from __future__ import annotations
@@ -219,6 +221,124 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
             "LGEN.L",
         ),
     },
+    # Full-day golden (A/B pick `dt2+rr7`): trade London 10–15, filter by
+    # pattern quality / context / exit geometry — not by clock hour.
+    # Dual-green on top-10 £20k AND top-50 £100k across 60/90/120d.
+    "trade-rules-v2.5": {
+        "label": (
+            "60m full-day: engulfing-only, RR=7, hours 10-15, cooloff, "
+            "max 2 stops, risk 1.5%/pos 35%, downtrend≥2%, drag blocklist"
+        ),
+        "interval": "60m",
+        "reward_risk": 7.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (10, 11, 12, 13, 14, 15),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing",),
+        "cooloff_after_stop": True,
+        "trail_breakeven_r": None,
+        "max_stops_per_symbol": 2,
+        "risk_frac": 0.015,
+        "max_position_frac": 0.35,
+        "min_engulf_body_ratio": 1.0,
+        "min_downtrend_pct": 0.02,
+        "symbol_blocklist": (
+            "LLOY.L",
+            "BARC.L",
+            "NWG.L",
+            "STAN.L",
+            "BA.L",
+            "RR.L",
+            "III.L",
+            "ADM.L",
+            "AAF.L",
+            "SMT.L",
+            "EXPN.L",
+            "IHG.L",
+            "EDV.L",
+            "SN.L",
+            "SVT.L",
+            "SGRO.L",
+            "HLN.L",
+            "DGE.L",
+            "SSE.L",
+            "UU.L",
+            "BHP.L",
+            "ANTO.L",
+            "CCH.L",
+            "ABF.L",
+            "INF.L",
+            "PRU.L",
+            "LGEN.L",
+        ),
+    },
+    # patterns-v2 A/B pick `engulf+harami` (ab_patterns_v2.json):
+    # Same full-day shell as v2.5; add bullish harami for denser dual-green.
+    # Beat control on min-PnL across top10£20k + top50£100k × 60/90/120d
+    # without collapsing trade count (unlike volume-gated packs).
+    "trade-rules-v2.6": {
+        "label": (
+            "60m patterns-v2: engulfing+harami, RR=7, hours 10-15, cooloff, "
+            "max 2 stops, risk 1.5%/pos 35%, downtrend≥2%, drag blocklist"
+        ),
+        "interval": "60m",
+        "reward_risk": 7.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (10, 11, 12, 13, 14, 15),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing", "bullish_harami"),
+        "cooloff_after_stop": True,
+        "trail_breakeven_r": None,
+        "max_stops_per_symbol": 2,
+        "risk_frac": 0.015,
+        "max_position_frac": 0.35,
+        "min_engulf_body_ratio": 1.0,
+        "min_downtrend_pct": 0.02,
+        "min_volume_ratio": 0.0,
+        "require_next_open_confirm": False,
+        "require_close_in_upper_half": False,
+        "symbol_blocklist": (
+            "LLOY.L",
+            "BARC.L",
+            "NWG.L",
+            "STAN.L",
+            "BA.L",
+            "RR.L",
+            "III.L",
+            "ADM.L",
+            "AAF.L",
+            "SMT.L",
+            "EXPN.L",
+            "IHG.L",
+            "EDV.L",
+            "SN.L",
+            "SVT.L",
+            "SGRO.L",
+            "HLN.L",
+            "DGE.L",
+            "SSE.L",
+            "UU.L",
+            "BHP.L",
+            "ANTO.L",
+            "CCH.L",
+            "ABF.L",
+            "INF.L",
+            "PRU.L",
+            "LGEN.L",
+        ),
+    },
 }
 
 
@@ -248,6 +368,13 @@ class TradeRules:
     large_book_risk_frac: float | None = None
     large_book_max_position_frac: float | None = None
     large_book_max_stops_per_symbol: int | None = None
+    # Quality filters (full-day approach — replace hour slicing)
+    min_engulf_body_ratio: float = 1.0  # body_cur / body_prev
+    min_downtrend_pct: float = 0.0  # prior close drop over trend lookback
+    # patterns-v2 confirmations (defaults off → v2.5 behaviour unchanged)
+    min_volume_ratio: float = 0.0  # confirm-bar vol / prior 10-bar avg; 0=off
+    require_next_open_confirm: bool = False  # next open >= pattern close
+    require_close_in_upper_half: bool = False  # pattern close above mid-range
 
     @property
     def bullish_set(self) -> set[str]:
@@ -278,7 +405,7 @@ class TradeRules:
         return self.max_stops_per_symbol
 
 
-def load_trade_rules(version: str = "trade-rules-v2.4") -> TradeRules:
+def load_trade_rules(version: str = "trade-rules-v2.6") -> TradeRules:
     if version not in TRADE_RULE_PROFILES:
         raise ValueError(
             f"Unknown trade rules {version!r}; choose from {sorted(TRADE_RULE_PROFILES)}"
@@ -326,6 +453,13 @@ def load_trade_rules(version: str = "trade-rules-v2.4") -> TradeRules:
             else None
         ),
         large_book_max_stops_per_symbol=raw.get("large_book_max_stops_per_symbol"),
+        min_engulf_body_ratio=float(raw.get("min_engulf_body_ratio", 1.0)),
+        min_downtrend_pct=float(raw.get("min_downtrend_pct", 0.0)),
+        min_volume_ratio=float(raw.get("min_volume_ratio", 0.0)),
+        require_next_open_confirm=bool(raw.get("require_next_open_confirm", False)),
+        require_close_in_upper_half=bool(
+            raw.get("require_close_in_upper_half", False)
+        ),
     )
 
 
@@ -346,6 +480,90 @@ def setup_levels(
     risk = max(entry - stop, entry * 1e-4)
     target = entry + reward_risk * risk
     return entry, stop, target
+
+
+_INTERVAL_MINUTES = {"5m": 5, "15m": 15, "30m": 30, "60m": 60, "1h": 60}
+
+
+def interval_minutes(rules: TradeRules) -> int:
+    return _INTERVAL_MINUTES.get(rules.interval, 60)
+
+
+def sync_settings_from_rules(settings: Any, rules: TradeRules | None = None) -> Any:
+    """Align Settings knobs (RR, sizing, interval) with a TradeRules profile.
+
+    `settings` is an app.config.Settings instance; typed as Any to avoid a
+    circular import with config.py.
+    """
+    if rules is None:
+        rules = load_trade_rules(settings.trade_rules_version)
+    risk, max_pos = rules.sizing_for_cash(float(settings.starting_cash_gbp))
+    return settings.model_copy(
+        update={
+            "trade_rules_version": rules.version,
+            "reward_risk": rules.reward_risk,
+            "setup_expiry_bars": rules.setup_expiry_bars,
+            "risk_frac": risk,
+            "max_position_frac": max_pos,
+            "interval_minutes": interval_minutes(rules),
+        }
+    )
+
+
+def pattern_levels_from_detection(
+    det_conditions: dict[str, Any],
+    bar_high: float,
+    bar_low: float,
+    bar_close: float,
+) -> tuple[float, float, float]:
+    """Return (pattern_high, pattern_low, pattern_close) for stop/entry geometry."""
+    ph = float(det_conditions.get("pattern_high") or bar_high)
+    pl = float(det_conditions.get("pattern_low") or bar_low)
+    pc = float(det_conditions.get("pattern_close") or bar_close)
+    return ph, pl, pc
+
+
+def passes_quality_filters(
+    *,
+    rules: TradeRules,
+    pattern: str,
+    conditions: dict[str, Any],
+    bar_high: float,
+    bar_low: float,
+    bar_close: float,
+    downtrend_ok: bool,
+    downtrend_pct: float,
+    local_hour: int | None,
+) -> bool:
+    """Shared entry gates used by portfolio / backtest / live runner."""
+    if pattern not in rules.bullish_set:
+        return False
+    if rules.trade_hours_london is not None and local_hour is not None:
+        if local_hour not in rules.trade_hours_london:
+            return False
+    if rules.require_downtrend and not downtrend_ok:
+        return False
+    if rules.min_downtrend_pct > 0 and downtrend_pct < rules.min_downtrend_pct:
+        return False
+    if rules.min_engulf_body_ratio > 1.0 and pattern == "bullish_engulfing":
+        bp = float(conditions.get("body_prev") or 0.0)
+        bc = float(conditions.get("body_cur") or 0.0)
+        if bp <= 0 or bc / bp < rules.min_engulf_body_ratio:
+            return False
+    if rules.min_volume_ratio > 0:
+        vr = conditions.get("volume_ratio")
+        if vr is None or float(vr) < rules.min_volume_ratio:
+            return False
+    ph, pl, pc = pattern_levels_from_detection(
+        conditions, bar_high, bar_low, bar_close
+    )
+    if rules.require_close_in_upper_half:
+        if ph <= pl or pc < (ph + pl) / 2.0:
+            return False
+    stop_pct = (ph - pl) / ph if ph else 0.0
+    if stop_pct < rules.min_stop_pct:
+        return False
+    return True
 
 
 def expected_net_at_target(

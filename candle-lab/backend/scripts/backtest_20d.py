@@ -34,13 +34,21 @@ from app.paper import (
     simulate_long_bar,
     size_shares,
 )
-from app.patterns import DETECTOR_VERSION, detect_closed_patterns, in_downtrend
+from app.patterns import (
+    DETECTOR_VERSION,
+    detect_closed_patterns,
+    downtrend_depth_pct,
+    in_downtrend,
+)
 from app.trade_rules import (
     TRADE_RULE_PROFILES,
     TradeRules,
     expected_net_at_target,
     load_trade_rules,
+    passes_quality_filters,
+    pattern_levels_from_detection,
     setup_levels,
+    sync_settings_from_rules,
 )
 
 LONDON = ZoneInfo("Europe/London")
@@ -65,6 +73,9 @@ class OpenSetup:
     exit_reason: str = ""
     ambiguous: bool = False
     pnl_gbp: float = 0.0
+    # patterns-v2 next-open confirmation
+    pattern_close: float = 0.0
+    awaiting_next_open: bool = False
 
 
 @dataclass
@@ -252,23 +263,28 @@ def simulate_symbol(
                 and open_setup is None
             ):
                 if (
-                    rules.trade_hours_london is not None
-                    and local.hour not in rules.trade_hours_london
-                ):
-                    continue
-                if (
                     rules.max_trades_per_day is not None
                     and day_trade_counts.get(day, 0) >= rules.max_trades_per_day
                 ):
                     continue
-                if rules.require_downtrend and not in_downtrend(df, i):
+                if not passes_quality_filters(
+                    rules=rules,
+                    pattern=det.pattern,
+                    conditions=det.conditions,
+                    bar_high=high,
+                    bar_low=low,
+                    bar_close=close,
+                    downtrend_ok=in_downtrend(df, i),
+                    downtrend_pct=downtrend_depth_pct(df, i),
+                    local_hour=local.hour,
+                ):
                     continue
-                stop_pct = (high - low) / high if high else 0.0
-                if stop_pct < rules.min_stop_pct:
-                    continue
+                ph, pl, pc = pattern_levels_from_detection(
+                    det.conditions, high, low, close
+                )
                 entry, stop, target = setup_levels(
-                    high,
-                    low,
+                    ph,
+                    pl,
                     entry_buffer_frac=settings.entry_buffer_frac,
                     stop_buffer_frac=settings.stop_buffer_frac,
                     reward_risk=rules.reward_risk,
@@ -283,6 +299,8 @@ def simulate_symbol(
                     stop=stop,
                     target=target,
                     expiry_i=i + rules.setup_expiry_bars,
+                    pattern_close=pc,
+                    awaiting_next_open=bool(rules.require_next_open_confirm),
                 )
 
         if open_setup is None:
@@ -291,6 +309,19 @@ def simulate_symbol(
         if open_setup.status == "pending":
             if i <= open_setup.confirm_i:
                 continue
+            if open_setup.awaiting_next_open:
+                if i == open_setup.confirm_i + 1:
+                    if open_px < open_setup.pattern_close:
+                        open_setup.status = "expired"
+                        expired += 1
+                        open_setup = None
+                        continue
+                    open_setup.awaiting_next_open = False
+                else:
+                    open_setup.status = "expired"
+                    expired += 1
+                    open_setup = None
+                    continue
             if i > open_setup.expiry_i:
                 open_setup.status = "expired"
                 expired += 1
@@ -398,7 +429,7 @@ def run(
     symbols: list[str],
     starting_cash: float,
     broker: str = "trading212",
-    rules_version: str = "trade-rules-v2",
+    rules_version: str = "trade-rules-v2.6",
     interval: str | None = None,
 ) -> dict:
     settings = apply_broker_profile(
@@ -406,13 +437,7 @@ def run(
         broker,
     )
     rules = load_trade_rules(rules_version)
-    settings = settings.model_copy(
-        update={
-            "trade_rules_version": rules.version,
-            "reward_risk": rules.reward_risk,
-            "setup_expiry_bars": rules.setup_expiry_bars,
-        }
-    )
+    settings = sync_settings_from_rules(settings, rules)
     bar_interval = interval or rules.interval
     per_symbol: list[dict] = []
     all_trades: list[dict] = []
@@ -546,7 +571,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--rules",
-        default="trade-rules-v2",
+        default="trade-rules-v2.6",
         choices=sorted(TRADE_RULE_PROFILES),
         help="Trade rule profile",
     )
