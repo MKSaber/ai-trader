@@ -84,6 +84,19 @@ def test_v25_fullday_golden_defaults():
         assert sym not in r.blocklist_set
 
 
+def test_v26_patterns_harami_golden():
+    r = load_trade_rules("trade-rules-v2.6")
+    assert r.reward_risk == 7.0
+    assert r.trade_hours_london == (10, 11, 12, 13, 14, 15)
+    assert r.min_downtrend_pct == 0.02
+    assert r.bullish_patterns == ("bullish_engulfing", "bullish_harami")
+    assert r.min_volume_ratio == 0.0
+    assert r.require_next_open_confirm is False
+    assert r.require_close_in_upper_half is False
+    assert r.sizing_for_cash(20_000) == r.sizing_for_cash(100_000)
+    assert "III.L" in r.blocklist_set
+
+
 def test_stop_pad_widens_stop():
     entry, stop, target = setup_levels(
         high=110,

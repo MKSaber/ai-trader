@@ -61,8 +61,8 @@ cd candle-lab/backend && . .venv/bin/activate
 # Default trade-rules-v2 (60m, cost-aware) — see TRADE_RULES.md + IG_PLAYBOOK.md
 python scripts/backtest_20d.py --days 10 --rules trade-rules-v2 --broker trading212 \
   --symbols VOD.L,BP.L,HSBA.L,GSK.L,AZN.L
-# Shared portfolio (v2.5 full-day golden default):
-python scripts/portfolio_20d.py --days 60 --cash 20000 --rules trade-rules-v2.5 --broker trading212
+# Shared portfolio (v2.6 patterns-v2 golden default):
+python scripts/portfolio_20d.py --days 60 --cash 20000 --rules trade-rules-v2.6 --broker trading212
 # Legacy:
 python scripts/backtest_20d.py --days 10 --rules trade-rules-v1 --broker trading212
 ```

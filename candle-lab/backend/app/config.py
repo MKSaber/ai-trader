@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     warmup_bars: int = 80
 
     detector_version: str = "patterns-v2"
-    trade_rules_version: str = "trade-rules-v2.5"
+    trade_rules_version: str = "trade-rules-v2.6"
     # Default paper costs track Trading 212 Invest (see COST_SOURCES.md).
     cost_profile: str = "trading212"
 

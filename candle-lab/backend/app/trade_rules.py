@@ -6,8 +6,7 @@ trade-rules-v2.2: stay green on top-10 / 60d (hour-15 filter + cooloff/sizing).
 trade-rules-v2.3: transitional cash-aware broad-book fix (superseded by v2.4).
 trade-rules-v2.4: hour-15 golden (superseded for full-day trading by v2.5).
 trade-rules-v2.5: full-session golden — quality filters, not hour slicing.
-trade-rules-v2.6: patterns-v2 candidates (new reversals ± volume / next-open
-                  confirm) — only locked after dual-green A/B; see ab_patterns_v2.
+trade-rules-v2.6: patterns-v2 golden — v2.5 shell + bullish harami (A/B pick).
 """
 
 from __future__ import annotations
@@ -279,6 +278,67 @@ TRADE_RULE_PROFILES: dict[str, dict[str, Any]] = {
             "LGEN.L",
         ),
     },
+    # patterns-v2 A/B pick `engulf+harami` (ab_patterns_v2.json):
+    # Same full-day shell as v2.5; add bullish harami for denser dual-green.
+    # Beat control on min-PnL across top10£20k + top50£100k × 60/90/120d
+    # without collapsing trade count (unlike volume-gated packs).
+    "trade-rules-v2.6": {
+        "label": (
+            "60m patterns-v2: engulfing+harami, RR=7, hours 10-15, cooloff, "
+            "max 2 stops, risk 1.5%/pos 35%, downtrend≥2%, drag blocklist"
+        ),
+        "interval": "60m",
+        "reward_risk": 7.0,
+        "setup_expiry_bars": 5,
+        "min_stop_pct": 0.003,
+        "stop_pad_ranges": 1.0,
+        "require_downtrend": True,
+        "trade_hours_london": (10, 11, 12, 13, 14, 15),
+        "max_trades_per_day": 1,
+        "exit_on_bearish": False,
+        "session_flat": False,
+        "cost_gate": True,
+        "bullish_patterns": ("bullish_engulfing", "bullish_harami"),
+        "cooloff_after_stop": True,
+        "trail_breakeven_r": None,
+        "max_stops_per_symbol": 2,
+        "risk_frac": 0.015,
+        "max_position_frac": 0.35,
+        "min_engulf_body_ratio": 1.0,
+        "min_downtrend_pct": 0.02,
+        "min_volume_ratio": 0.0,
+        "require_next_open_confirm": False,
+        "require_close_in_upper_half": False,
+        "symbol_blocklist": (
+            "LLOY.L",
+            "BARC.L",
+            "NWG.L",
+            "STAN.L",
+            "BA.L",
+            "RR.L",
+            "III.L",
+            "ADM.L",
+            "AAF.L",
+            "SMT.L",
+            "EXPN.L",
+            "IHG.L",
+            "EDV.L",
+            "SN.L",
+            "SVT.L",
+            "SGRO.L",
+            "HLN.L",
+            "DGE.L",
+            "SSE.L",
+            "UU.L",
+            "BHP.L",
+            "ANTO.L",
+            "CCH.L",
+            "ABF.L",
+            "INF.L",
+            "PRU.L",
+            "LGEN.L",
+        ),
+    },
 }
 
 
@@ -345,7 +405,7 @@ class TradeRules:
         return self.max_stops_per_symbol
 
 
-def load_trade_rules(version: str = "trade-rules-v2.5") -> TradeRules:
+def load_trade_rules(version: str = "trade-rules-v2.6") -> TradeRules:
     if version not in TRADE_RULE_PROFILES:
         raise ValueError(
             f"Unknown trade rules {version!r}; choose from {sorted(TRADE_RULE_PROFILES)}"

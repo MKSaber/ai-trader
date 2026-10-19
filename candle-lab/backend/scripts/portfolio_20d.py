@@ -374,7 +374,7 @@ def main() -> int:
     parser.add_argument("--cash", type=float, default=20_000.0)
     parser.add_argument("--symbols", default=DEFAULT_SYMBOLS)
     parser.add_argument("--broker", default="trading212", choices=sorted(BROKER_PROFILES))
-    parser.add_argument("--rules", default="trade-rules-v2.5")
+    parser.add_argument("--rules", default="trade-rules-v2.6")
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
@@ -434,8 +434,8 @@ def main() -> int:
         "disclaimer": (
             "Shared-cash paper sim on delayed Yahoo 60m bars with named trade rules "
             "and Trading 212 / GOV.UK costs. Not live broker execution. "
-            "v2.5 full-day golden (hours 10-15, downtrend≥2%, RR=7, blocklist) "
-            "— quality filters instead of hour slicing; research only."
+            "v2.6 patterns-v2 golden (engulfing+harami, hours 10-15, "
+            "downtrend≥2%, RR=7, blocklist) — research only."
         ),
     }
 
