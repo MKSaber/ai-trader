@@ -40,6 +40,23 @@ jobs:
   daily-run:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Ephemeral Postgres when secrets.DATABASE_URL is unset (same image as CI).
+    # For durable multi-day ledger/model state, set the DATABASE_URL secret
+    # to an external Postgres — see docs/PIPELINE.md.
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_USER: lse
+          POSTGRES_PASSWORD: lse_dev_password
+          POSTGRES_DB: lse_pattern_lab
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U lse -d lse_pattern_lab"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       OBJECT_STORAGE_BACKEND: ${{ secrets.OBJECT_STORAGE_BACKEND || 'local' }}
@@ -54,15 +71,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Require DATABASE_URL
-        if: ${{ !inputs.offline }}
+      - name: Resolve DATABASE_URL
         run: |
-          if [ -z "$DATABASE_URL" ]; then
-            echo "DATABASE_URL secret is required for scheduled live runs."
-            echo "Provision external Postgres and set the secret. See docs/PIPELINE.md."
-            mkdir -p artifacts
-            echo "BLOCKER: missing DATABASE_URL" > artifacts/FAILURE.txt
-            exit 1
+          if [ -n "$DATABASE_URL" ]; then
+            echo "Using DATABASE_URL from repository secret (durable)."
+          else
+            echo "DATABASE_URL secret unset — falling back to workflow Postgres service (ephemeral)."
+            echo "DATABASE_URL=postgresql+psycopg://lse:lse_dev_password@localhost:5432/lse_pattern_lab" >> "$GITHUB_ENV"
           fi
 
       - uses: actions/setup-python@v5

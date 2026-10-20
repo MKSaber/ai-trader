@@ -37,11 +37,17 @@ GitHub runners are disposable. Authoritative state:
 
 | Concern | Local Docker | GitHub Actions |
 |---------|--------------|----------------|
-| DB | Compose Postgres | External `DATABASE_URL` (you provision) |
-| Files / models | `./storage` | S3-compatible (`OBJECT_STORAGE_BACKEND=s3`) |
+| DB | Compose Postgres | `DATABASE_URL` secret **or** workflow Postgres service (ephemeral) |
+| Files / models | `./storage` | S3-compatible (`OBJECT_STORAGE_BACKEND=s3`) or local workspace |
 | Reports | `storage/artifacts` | Workflow artifacts (downloadable only) |
 
-Secrets needed for durable CI: `DATABASE_URL`, S3 credentials. yfinance needs no key. Never commit secrets or print connection strings.
+If `DATABASE_URL` is unset, the daily workflow falls back to a Postgres
+**service container** (same credentials as `ci.yml`). That keeps scheduled
+runs green without secrets, but ledger/model state does **not** persist across
+days. For durable multi-day research, provision external Postgres and set the
+`DATABASE_URL` secret (plus S3 credentials if you want durable files).
+
+yfinance needs no key. Never commit secrets or print connection strings.
 
 ## Artifact bundle
 
