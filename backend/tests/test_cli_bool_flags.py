@@ -44,9 +44,18 @@ def test_daily_run_flags_are_true(monkeypatch) -> None:
         return {"status": "success", "run_key": "t"}
 
     monkeypatch.setattr("app.cli.run_daily_pipeline", fake_pipeline)
-    monkeypatch.setattr("app.cli.SessionLocal", lambda: type("S", (), {"close": lambda self: None})())
+    monkeypatch.setattr(
+        "app.cli.SessionLocal",
+        lambda: type("S", (), {"close": lambda self: None})(),
+    )
 
     result = CliRunner().invoke(cli, ["daily-run", "--offline", "--dry-run"])
-    assert result.exit_code == 0, result.stdout + result.stderr
-    assert captured["dry_run"] is True
-    assert captured["offline"] is True
+    assert result.exit_code == 0, result.stdout + str(result.exception)
+    assert captured.get("dry_run") is True, captured
+    assert captured.get("offline") is True, captured
+
+
+def test_pipeline_run_accepts_coerced_false_strings() -> None:
+    """Postgres BOOLEAN path: string 'False' must coerce before insert."""
+    assert _as_bool("False") is False
+    assert _as_bool(None) is False
