@@ -177,6 +177,15 @@ def run_daily_pipeline(
     }
 
 
+def _as_bool(value: Any) -> bool:
+    """Coerce CLI/env leftovers to a real bool for Postgres BOOLEAN columns."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    return bool(value)
+
+
 def stage_create_run_lock(ctx: PipelineContext) -> None:
     """Create run record and acquire advisory lock."""
     db = ctx.db
@@ -189,9 +198,9 @@ def stage_create_run_lock(ctx: PipelineContext) -> None:
     run = m.PipelineRun(
         run_key=run_key,
         session_date=ctx.session_date,
-        status=PipelineRunStatus.RUNNING,
-        dry_run=ctx.dry_run,
-        offline=ctx.offline,
+        status=str(PipelineRunStatus.RUNNING),
+        dry_run=_as_bool(ctx.dry_run),
+        offline=_as_bool(ctx.offline),
         manifest={"stages": STAGE_NAMES},
     )
     db.add(run)

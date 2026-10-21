@@ -461,8 +461,8 @@ class PipelineRun(Base):
     run_key: Mapped[str] = mapped_column(String(128), unique=True)
     session_date: Mapped[date | None] = mapped_column(Date)
     status: Mapped[str] = mapped_column(String(32), default="running")
-    dry_run: Mapped[bool] = mapped_column(Boolean, default=False)
-    offline: Mapped[bool] = mapped_column(Boolean, default=False)
+    dry_run: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    offline: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     started_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

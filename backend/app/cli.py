@@ -49,6 +49,13 @@ def daily_run(
     console.print(
         "Research pipeline only. No broker orders. No automatic champion promotion."
     )
+    # Guard against Click/Typer bool-flag regressions that yield str/None.
+    dry_run_b = dry_run is True or (
+        isinstance(dry_run, str) and dry_run.strip().lower() in {"1", "true", "yes"}
+    )
+    offline_b = offline is True or (
+        isinstance(offline, str) and offline.strip().lower() in {"1", "true", "yes"}
+    )
     db = SessionLocal()
     try:
         result = run_daily_pipeline(
@@ -56,8 +63,8 @@ def daily_run(
             session_date=date.fromisoformat(session) if session else None,
             catchup_from=date.fromisoformat(catchup_from) if catchup_from else None,
             catchup_to=date.fromisoformat(catchup_to) if catchup_to else None,
-            dry_run=dry_run,
-            offline=offline,
+            dry_run=dry_run_b,
+            offline=offline_b,
             symbols=[s.strip() for s in symbols.split(",") if s.strip()],
         )
         console.print(result)
